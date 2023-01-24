@@ -20,6 +20,10 @@ def algorithm():
     print(result.cost)
     print(result.routes)
 
-    return jsonify(result)
+    return jsonify(
+    {
+        "cost": result.cost,
+        "routes": result.routes
+    })
 
 app.run(host='0.0.0.0', port=9876)
