@@ -174,13 +174,14 @@ def read_vrplib(filename, rounded=True):
     demand = []
     mode = ''
     capacity = None
+    vehicles = None
     edge_weight_type = None
     edge_weight_format = None
     duration_matrix = []
     service_t = []
     timewi = []
     release_times = []
-    with open(filename, 'r') as f:
+    with open(f"instances/{filename}", 'r') as f:
         
         for line in f:
             line = line.strip(' \t\n')
@@ -188,6 +189,8 @@ def read_vrplib(filename, rounded=True):
                 continue
             elif line.startswith('CAPACITY'):
                 capacity = int(line.split(" : ")[1])
+            elif line.startswith('VEHICLES'):
+                vehicles = int(line.split(" : ")[1])
             elif line.startswith('EDGE_WEIGHT_TYPE'):
                 edge_weight_type = line.split(" : ")[1]
             elif line.startswith('EDGE_WEIGHT_FORMAT'):
@@ -251,6 +254,7 @@ def read_vrplib(filename, rounded=True):
         "coords": np.array([depot] + loc),
         "demands": np.array(demand),
         "capacity": capacity,
+        "vehicle_count": vehicles,
         "time_windows": np.array(timewi),
         "service_times": np.array(service_t),
         "duration_matrix": np.array(duration_matrix)
