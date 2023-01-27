@@ -2,6 +2,7 @@ import numpy as np
 import hygese as hgs 
 from collections import OrderedDict
 from tools import write_vrplib, read_vrplib
+from solver import oml_solver
 import json
 
 class HGS_Solver():
@@ -24,6 +25,15 @@ class HGS_Solver():
         self.ap = hgs.AlgorithmParameters(timeLimit=self.timeLimit)
         self.hgs_solver = hgs.Solver(parameters=self.ap, verbose=True)
 
-    def solve_cvrp(self, data):
+    def solve_cvrp(self):
         result = self.hgs_solver.solve_cvrp(self.data)
+        return result
+
+class OML_Solver():
+    def __init__(self, data):
+        self.data = data
+        self.oml_solver = oml_solver
+
+    def solve(self):
+        result = self.oml_solver(self.data)
         return result
