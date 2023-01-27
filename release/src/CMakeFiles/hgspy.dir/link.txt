@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -O3 -DNDEBUG -flto -shared  -o ../lib/hgspy.cpython-38-x86_64-linux-gnu.so CMakeFiles/hgspy.dir/bindings.cpp.o  ../lib/libhgs.a 

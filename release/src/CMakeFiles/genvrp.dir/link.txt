@@ -1,0 +1,1 @@
+/usr/bin/c++  -O3 -DNDEBUG  -rdynamic CMakeFiles/genvrp.dir/main.cpp.o  -o ../bin/genvrp  ../lib/libhgs.a 
