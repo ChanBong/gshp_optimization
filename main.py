@@ -1,6 +1,7 @@
 
 import numpy as np 
 import hygese as hgs 
+from models import HGS_Solver
 
 data = dict()
 data['distance_matrix'] = [
@@ -28,8 +29,10 @@ data['demands'] = [0, 1, 1, 2, 4, 2, 4, 8, 8, 1, 2, 1, 2, 4, 4, 8, 8]
 data['vehicle_capacity'] = 15  # different from OR-Tools: homogeneous capacity
 data['service_times'] = np.zeros(len(data['demands'])).tolist()
 
-# dump data to json in a file named toy_data.json
-import json
-with open('data/toy_data.json', 'w') as outfile:
-    json.dump(data, outfile)
+# Solver initialization
+hgs_solver = HGS_Solver(data, timeLimit=3.2)
 
+# Solve
+result = hgs_solver.solve_cvrp(data)
+print(result.cost)
+print(result.routes)
