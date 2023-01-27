@@ -1,10 +1,25 @@
 # GS_HP Optimisation 
 ## File Structure
 
+### Folders
+- `data`: Contains data for competetion and some other data from OML
+- `hgs_vrptw`: base C++ code for HGS
+- `instances`: VRPTW instances provided by ORTEC
+- `notebooks`: Experiments mainly 
+- `release`: compiled C++ code with python bindings
+- `strategies`: dynamic and static strategies by OML
+
+### Files
+
 - `app.py` : Runs the flask server
-- `models.py` : File containing all the classes of solvers used
-- `data_analyse.ipynb` : Clean and analyse data
+- `controller.py` : Controller for static and dynamic varients. NOT WORKING 
+- `enviournemnt.py`: Env for solving dynamic problems. Also used in static varient in limited capacity
+- `hgspy.py`: python binding for HGS C++ release
 - `main.py` : Test solutions
+- `maps.py`: Everything related to mapping adrresses and all
+- `models.py` : File containing all the classes of solvers used
+- `solver.py`: Main solver
+- `tools.py`: Various utils 
 
 ## Solver
 
