@@ -28,7 +28,7 @@ There is an endpoint for each model that we are using.
 ### Input
 
 Input to any endpoint is a json file with following fields
-```json
+```bash
 {
     instance_name: "name_of_the_instance",
     instance_seed: "seed_for_the_instance",
@@ -42,7 +42,7 @@ Input to any endpoint is a json file with following fields
 ```
 
 ### Output
-```json
+```bash
 routes:[
     {
         locationID1: 1
@@ -124,15 +124,17 @@ poetry install --only tune
 
 ### App interaction
 - [x] Run a flask app
+- [x] Return the jsonified results
 - [ ] Feed parsed data from csv to DB
-- [ ] Return the jsonified results
+
 
 ### OR Optimisation 
 
 - [x] HGS-Swap*
-- [x] OptiML Solution
+- [x] OptiML static pipeline
+- [ ] OptiML dynamic pipeline
 - [ ] VNS
-- [ ] OptiML pipeline
+
 
 ### ML Optimisation
 
