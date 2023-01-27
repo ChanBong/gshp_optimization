@@ -21,6 +21,37 @@
 - `solver.py`: Main solver
 - `tools.py`: Various utils 
 
+## Flask API
+There is an endpoint for each model that we are using.
+- `oml`: For OML solution
+- `hgs`: For vanilla HGS solution
+### Input
+
+Input to any endpoint is a json file with following fields
+```json
+{
+    instance_name: "name_of_the_instance",
+    instance_seed: "seed_for_the_instance",
+    solver_seed: "seed_for_the_solver",
+    epoch_tlim: "time_limit_for_each_epoch",
+    config_loc: "configs/solver.toml",
+    profile: True,
+    static: "boolean_value_wheater_we_want_to_solve_static_or_dynamic",
+    hindsight: False
+}
+```
+
+### Output
+```json
+routes:[
+    {
+        locationID1: 1
+        locationID2: 2
+        distance: "distance_travelled_by_the_rider"
+    }
+]
+```
+
 ## Solver
 
 Our static solver is based on the hybrid genetic search baseline we received as part of the quickstart code [here](https://github.com/ortec/euro-neurips-vrp-2022-quickstart).
