@@ -2,7 +2,8 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 import json
-from models import HGS_Solver
+from models import HGS_Solver, OML_Solver
+
 app = Flask(__name__)
 
 @app.route('/hgs', methods=['POST'])
@@ -13,18 +14,34 @@ def hgs():
     """
     data = request.get_json()
     hgs_solver = HGS_Solver(data)
-    result = hgs_solver.solve_cvrp(data)
+    result = hgs_solver.solve_cvrp()
     return jsonify(
     {
-        "cost": result.cost,
+        "cost": str(int(result.cost)),
         "routes": result.routes
     })
 
 @app.route('/oml', methods=['POST'])
 def oml():
+    """
+    OML Solver:
+    uses the OML solution `solver.py` to solve VRPTW
+    """
     data = request.get_json()
-    result = HGS_Solver.solve(data)
-    return jsonify(result)
+    oml_solver = OML_Solver(data)
+    cost, routes = OML_Solver.solve(oml_solver)
+    cost = str(cost[0])
+    routes = [route.tolist() for route in routes[0]]
+    
+    # sort routes by length in descending order and if length is same then sort by first element sort by first element putting the smaller first element first
+    routes = sorted(routes, key=lambda x: (-len(x), x[0]))
+
+    return jsonify(
+    {
+        "cost": cost,
+        "routes": routes
+    })
+
 
 # defalut landing page
 @app.route('/')

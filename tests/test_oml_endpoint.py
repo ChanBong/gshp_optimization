@@ -5,11 +5,11 @@ import json
 import os
 import pytest
 
-def test_hgs_endpoint():
+def test_oml_endpoint():
     """
     Test to check the hgs endpoint
     """
-    url = "http://localhost:9876/hgs"
+    url = "http://localhost:9876/oml"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     """
     sample data

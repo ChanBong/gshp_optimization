@@ -28,7 +28,7 @@ def parse_args():
 
 
 def run(args):
-    print(args)
+    print(type(args))
     if args.instance is not None:
         env = VRPEnvironment(
             seed=args.instance_seed,
@@ -55,18 +55,29 @@ def run(args):
     if args.hindsight:
         solve_hindsight(env, config.static(), args.solver_seed)
     else:
-        print("Solving")
         costs, solution = solve_dynamic(env, config, args.solver_seed)
-        print("Solved")
-        print(costs)
-        print(solution)
-        print("#" * 80)
         # Dump costs and solution to file
         with open(f"solutions/{store_name_of_instance}-{args.solver_seed}.txt", "w") as f:
             f.write(f"Costs: {costs}\n")
             f.write(f"Solution: {solution}\n")
 
-
+def oml_solver(instance_dict):
+    '''
+    this function is used to solve the problem using the oml endpoint
+    convert a dictionary to a args namespace and then call the run function and return the costs and solution
+    '''
+    args = argparse.Namespace()
+    args.instance = instance_dict['instance_name']
+    args.instance_seed = instance_dict['instance_seed']
+    args.solver_seed = instance_dict['solver_seed']
+    args.epoch_tlim = instance_dict['epoch_tlim']
+    args.config_loc = instance_dict['config_loc']
+    args.profile = instance_dict['profile']
+    args.static = instance_dict['static']
+    args.hindsight = instance_dict['hindsight']
+    
+    costs, solution = run(args)
+    return costs, solution
 
 def main():
     args = parse_args()
