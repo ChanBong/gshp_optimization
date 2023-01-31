@@ -60,6 +60,8 @@ def run(args):
         with open(f"solutions/{store_name_of_instance}-{args.solver_seed}.txt", "w") as f:
             f.write(f"Costs: {costs}\n")
             f.write(f"Solution: {solution}\n")
+        
+        return costs, solution
 
 def oml_solver(instance_dict):
     '''
@@ -75,7 +77,7 @@ def oml_solver(instance_dict):
     args.profile = instance_dict['profile']
     args.static = instance_dict['static']
     args.hindsight = instance_dict['hindsight']
-    
+
     costs, solution = run(args)
     return costs, solution
 
