@@ -21,11 +21,32 @@ def hgs():
         "routes": result.routes
     })
 
-@app.route('/oml', methods=['POST'])
-def oml():
+@app.route('/optimise/static', methods=['POST'])
+def static_oml():
     """
     OML Solver:
-    uses the OML solution `solver.py` to solve VRPTW
+    uses the OML solution `solver.py` to solve static VRPTW  considering only deliveries
+    """
+    data = request.get_json()
+    oml_solver = OML_Solver(data)
+    cost, routes = OML_Solver.solve(oml_solver)
+    cost = str(cost[0])
+    routes = [route.tolist() for route in routes[0]]
+    
+    # sort routes by length in descending order and if length is same then sort by first element sort by first element putting the smaller first element first
+    routes = sorted(routes, key=lambda x: (-len(x), x[0]))
+
+    return jsonify(
+    {
+        "cost": cost,
+        "routes": routes
+    })
+
+@app.route('/optimise/dynamic', methods=['POST'])
+def dynamic_oml():
+    """
+    OML Solver:
+    uses the OML solution `solver.py` to solve dynamic VRPTW taking in a list of pickup locations
     """
     data = request.get_json()
     oml_solver = OML_Solver(data)
