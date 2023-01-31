@@ -9,7 +9,7 @@ def test_oml_endpoint():
     """
     Test to check the hgs endpoint
     """
-    url = "http://localhost:9876/oml"
+    url = "http://localhost:9876/optimise/static"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     """
     sample data
