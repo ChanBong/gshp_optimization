@@ -42,7 +42,7 @@ if __name__ == "__main__":
         timeout_timer = threading.Timer(args.timeout, lambda: p.kill())
         timeout_timer.daemon = True
         timeout_timer.start()
-        print("p.stdout:", p.stdout)
+        print("p.stdout:", p.stdout.read())
         for line in p.stdout:
             line = line.strip()
             print("line:", line)

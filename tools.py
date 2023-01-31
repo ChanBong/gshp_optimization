@@ -181,7 +181,7 @@ def read_vrplib(filename, rounded=True):
     service_t = []
     timewi = []
     release_times = []
-    with open(f"instances/{filename}", 'r') as f:
+    with open(f"{filename}", 'r') as f:
         
         for line in f:
             line = line.strip(' \t\n')

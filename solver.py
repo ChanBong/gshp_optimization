@@ -42,7 +42,7 @@ def run(args):
         assert not args.hindsight, "Cannot solve hindsight using controller"
         env = ControllerEnvironment(sys.stdin, sys.stdout)
 
-    store_name_of_instance = args.instance.split("/")[-1]
+    # store_name_of_instance = args.instance.split("/")[-1]
 
     # Make sure these parameters are not used by your solver
     args.instance = None
@@ -56,11 +56,12 @@ def run(args):
         solve_hindsight(env, config.static(), args.solver_seed)
     else:
         costs, solution = solve_dynamic(env, config, args.solver_seed)
-        # Dump costs and solution to file
-        with open(f"solutions/{store_name_of_instance}-{args.solver_seed}.txt", "w") as f:
+        # Dump costs and solution to file starting with current timestamp
+        with open(f"solutions/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt", "w") as f:
             f.write(f"Costs: {costs}\n")
             f.write(f"Solution: {solution}\n")
-        
+        print(f"Costs: {costs}\n")
+        print(f"Solution: {solution}\n")
         return costs, solution
 
 def oml_solver(instance_dict):
