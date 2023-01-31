@@ -28,7 +28,7 @@ def read_num_vehicles():
     return 5 # chosen arbitrarily
 
 def read_vehicle_capacity():
-    return 20 # chosen arbitrarily
+    return 50 # chosen arbitrarily
 
 def read_depot_index():
     return 0 # chosen arbitrarily
@@ -44,6 +44,7 @@ def get_demands():
     for demand_id in demand_ids:
         # demands.append(get_volume_from_id(demand_id))
         demands.append(2) # chosen arbitrarily
+    demands[0] = 0
     return demands
 
 def get_geocoding(address):
