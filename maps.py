@@ -44,6 +44,7 @@ def plot_map_from_lat_long(latitudes_longitudes, depot_index=0, title="Map"):
 
 def plot_solution(latitudes_longitudes, solution, depot_index=0, title="Solution"):
     # each route is a numpy array of customer indices. Add depot index in the start and end of each route.
+    # download the map
     depot = latitudes_longitudes[depot_index]
     latitudes_longitudes = np.delete(latitudes_longitudes, depot_index, axis=0)
     plt.scatter(latitudes_longitudes[:, 1], latitudes_longitudes[:, 0], label="Customers")
@@ -60,6 +61,5 @@ def plot_solution(latitudes_longitudes, solution, depot_index=0, title="Solution
         route_number += 1
     plt.title(title)
     plt.legend()
+    plt.savefig(f"{title}.png")
     plt.show()
-
-

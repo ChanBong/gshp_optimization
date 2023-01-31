@@ -178,4 +178,4 @@ env/
 __pycache__/
 workbench.ipynb
 data_analyse.ipynb
-
+release/
