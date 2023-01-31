@@ -20,8 +20,8 @@ latitudes = []
 longitudes = []
 demand_ids = []
 
-def read_file(filename):
-    data = pd.read_excel(filename)
+def read_xlsx(filename):
+    data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
     return data
 
 def read_num_vehicles():
@@ -87,9 +87,13 @@ def clean_address(address):
     address = address.replace("floor","")
     return address
 
-def clean_data(filename):
+def clean_data(filename, use_cache=False):
 
-    data = read_file(filename)
+    if use_cache:
+        clean_data = read_xlsx('cleaned_data_'+filename)
+        return clean_data
+
+    data = read_xlsx(filename)
     clean_data = data
     Latitude = []
     Longitude = []
@@ -122,6 +126,10 @@ def clean_data(filename):
     clean_data['latitude'] = Latitude
     clean_data['longitude'] = Longitude
 
+    new_file = pd.ExcelWriter('data/inter_iit_data/cleaned_data_'+filename+'.xlsx')
+    clean_data.to_excel(new_file)
+    new_file.save()
+
     return clean_data
 
 def read_coordinates(clean_data):
@@ -133,9 +141,15 @@ def read_coordinates(clean_data):
         latitudes.append(clean_data['latitude'][ind])
         demand_ids.append(clean_data['product_id'][ind])
 
-def generate_distance_matrix(filename):
+def normalize(matrix):
+    return (matrix+matrix.T)/2
 
-    read_coordinates(clean_data(filename))
+def generate_distance_matrix(filename, use_cache=False):
+
+    read_coordinates(clean_data(filename, use_cache))
+
+    if use_cache:
+        return read_xlsx('distance_matrix_'+filename).to_numpy()
 
     N = len(addresses)
     distance_matrix = np.zeros((N,N))
@@ -160,7 +174,52 @@ def generate_distance_matrix(filename):
         response = sdk.time_filter(locations, [departure_search], [])
         for location in response.results[0].locations:
             distance_matrix[ind,int(location.id)] = location.properties[0].distance
+    
+    distance_matrix = normalize(distance_matrix)
+
+    df = pd.DataFrame(distance_matrix)
+    df.to_excel('data/inter_iit_data/distance_matrix_'+filename+'.xlsx', index=False)
 
     return distance_matrix
 
-print(generate_distance_matrix('data/inter_iit_data/bangalore_pickups.xlsx'))
+def generate_instance(filename, use_cache=False):
+
+    distance_matrix = generate_distance_matrix(filename,use_cache)
+
+    instance_file = open("instances/instance_"+filename+".txt", "w")
+
+    instance_file.write(f"NAME : {filename.upper()}\n")
+    instance_file.write(f"COMMENT : INTER_IIT\n")
+    instance_file.write(f"TYPE : CVRP\n")
+    instance_file.write(f"DIMENSION : {distance_matrix.shape[0]}\n")
+    instance_file.write(f"VEHICLES : {read_num_vehicles()}\n")
+    instance_file.write(f"EDGE_WEIGHT_TYPE : EXPLICIT\n")
+    instance_file.write(f"EDGE_WEIGHT_FORMAT : FULL_MATRIX\n")
+    instance_file.write(f"CAPACITY : {read_vehicle_capacity()}\n")
+
+    instance_file.write(f"EDGE_WEIGHT_SECTION\n")
+    for row in distance_matrix:
+        for item in row:
+            instance_file.write(f"{item.astype(int)} ")
+        instance_file.write(f"\n")
+
+    instance_file.write(f"NODE_COORD_SECTION\n")
+    for index, coordinates in enumerate(get_coordinates()):
+        instance_file.write(f"{index+1} {(coordinates[0]*10000).astype(int)} {(coordinates[1]*10000).astype(int)}\n")
+
+    instance_file.write(f"DEMAND_SECTION\n")
+    for index, demand in enumerate(get_demands()):
+        instance_file.write(f"{index+1} {demand}\n")
+    
+    instance_file.write(f"DEPOT_SECTION\n{read_depot_index()+1}\n-1\n")
+    instance_file.write(f"SERVICE_TIME_SECTION\n")
+    for index in range(distance_matrix.shape[0]):
+        instance_file.write(f"{index+1} 0\n")
+    instance_file.write(f"TIME_WINDOW_SECTION\n")
+    for index in range(distance_matrix.shape[0]):
+        instance_file.write(f"{index+1} 0 100000\n")
+    instance_file.write(f"EOF\n")
+    
+    instance_file.close()
+
+generate_instance('bangalore_dispatch_address_finals',use_cache=True)
