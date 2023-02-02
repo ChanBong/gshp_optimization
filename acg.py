@@ -12,7 +12,7 @@ from traveltimepy.sdk import TravelTimeSdk
 bangalore_latitude = 12.9716
 bangalore_longitude = 77.5946
 
-sdk = TravelTimeSdk('35c415e7', '58f656d94a27fee4533f3e2ba90d0d8c')
+sdk = TravelTimeSdk('457cb73e', '423d700709835c86c392e5134aee4a11')
 
 ids=[]
 addresses = []
@@ -28,7 +28,7 @@ def read_num_vehicles():
     return 5 # chosen arbitrarily
 
 def read_vehicle_capacity():
-    return 50 # chosen arbitrarily
+    return 20 # chosen arbitrarily
 
 def read_depot_index():
     return 0 # chosen arbitrarily
@@ -44,7 +44,6 @@ def get_demands():
     for demand_id in demand_ids:
         # demands.append(get_volume_from_id(demand_id))
         demands.append(2) # chosen arbitrarily
-    demands[0] = 0
     return demands
 
 def get_geocoding(address):
@@ -133,20 +132,28 @@ def clean_data(filename, use_cache=False):
 
     return clean_data
 
+def reset():
+    ids=[]
+    addresses = []
+    latitudes = []
+    longitudes = []
+    demand_ids = []
+
 def read_coordinates(clean_data):
 
     for ind in clean_data.index:
-        ids.append(str(ind))
+        ids.append(str(len(ids)))
         addresses.append(clean_data['address'][ind])
         longitudes.append(clean_data['longitude'][ind])
         latitudes.append(clean_data['latitude'][ind])
         demand_ids.append(clean_data['product_id'][ind])
 
 def normalize(matrix):
-    return (matrix+matrix.T)/2
+    return (matrix+matrix.T)
 
 def generate_distance_matrix(filename, use_cache=False):
 
+    reset()
     read_coordinates(clean_data(filename, use_cache))
 
     if use_cache:
@@ -223,4 +230,43 @@ def generate_instance(filename, use_cache=False):
     
     instance_file.close()
 
-generate_instance('bangalore_dispatch_address_finals',use_cache=True)
+def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
+
+    reset()
+    read_coordinates(clean_data(filename_pickup, use_cache=True))
+    M = len(addresses)
+    read_coordinates(clean_data(filename_delivery, use_cache=True))
+    N = len(addresses)-M
+
+    if use_cache:
+        return read_xlsx('distance_matrix_pickup_to_delivery_'+filename).to_numpy()
+
+    distance_matrix = np.zeros((M,N))
+
+    locations = []
+
+    for ind in range(M+N):
+        locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
+
+    for ind in range(M):
+      
+        departure_search = DepartureSearch(
+            id='INTER_IIT',
+            arrival_location_ids=ids[M:],
+            departure_location_id=ids[ind],
+            departure_time=datetime.now(),
+            travel_time=14400,
+            transportation=Driving(),
+            properties=[Property.TRAVEL_TIME, Property.DISTANCE],
+        )
+
+        response = sdk.time_filter(locations, [departure_search], [])
+        for location in response.results[0].locations:
+            distance_matrix[ind,int(location.id)-M] = location.properties[0].distance
+    
+    df = pd.DataFrame(distance_matrix)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickup_to_delivery_'+filename_delivery+'.xlsx', index=False)
+
+    return distance_matrix
+
+print(generate_pickup_matrix('bangalore_pickups','bangalore_dispatch_address_finals'))
