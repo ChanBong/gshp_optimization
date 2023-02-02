@@ -12,7 +12,7 @@ from traveltimepy.sdk import TravelTimeSdk
 bangalore_latitude = 12.9716
 bangalore_longitude = 77.5946
 
-sdk = TravelTimeSdk('35c415e7', '58f656d94a27fee4533f3e2ba90d0d8c')
+sdk = TravelTimeSdk('457cb73e', '423d700709835c86c392e5134aee4a11')
 
 ids=[]
 addresses = []
@@ -142,7 +142,7 @@ def reset():
 def read_coordinates(clean_data):
 
     for ind in clean_data.index:
-        ids.append(str(ind))
+        ids.append(str(len(ids)))
         addresses.append(clean_data['address'][ind])
         longitudes.append(clean_data['longitude'][ind])
         latitudes.append(clean_data['latitude'][ind])
