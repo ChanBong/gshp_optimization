@@ -241,7 +241,7 @@ def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
     if use_cache:
         return read_xlsx('distance_matrix_pickup_to_delivery_'+filename_delivery).to_numpy()
 
-    distance_matrix = np.zeros((M,N))
+    distance_matrix = np.zeros((M,N+M))
 
     locations = []
 
@@ -262,7 +262,7 @@ def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
 
         response = sdk.time_filter(locations, [departure_search], [])
         for location in response.results[0].locations:
-            distance_matrix[ind,int(location.id)-M] = location.properties[0].distance
+            distance_matrix[ind,int(location.id)] = location.properties[0].distance
     
     df = pd.DataFrame(distance_matrix)
     df.to_excel('data/inter_iit_data/distance_matrix_pickup_to_delivery_'+filename_delivery+'.xlsx', index=False)
