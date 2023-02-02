@@ -270,4 +270,4 @@ def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
 
     return distance_matrix
 
-generate_pickup_matrix('bangalore_pickups', 'bangalore_dispatch_address_finals')
+# generate_pickup_matrix('bangalore_pickups', 'bangalore_dispatch_address_finals')

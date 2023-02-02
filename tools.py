@@ -442,3 +442,29 @@ def name2size(name: str) -> int:
     Extracts the instance size (i.e., num clients) from the instance name.
     """
     return int(re.search(r'-n(\d{1,3})-', name).group(1))
+
+# read solution and cost from file
+def read_solution(filename):
+    solution = []
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith('Costs:'):
+                # the line looks like this: Costs: {0: 41777}, extract the number
+                cost = int(line.split('Costs:')[1].split('}')[0].split(':')[1])
+            if line.startswith('Solution:'):
+                solution = line.split('Solution:')[1]
+                solution = solution.split('array([')[1:]
+                solution = [s.split('])')[0] for s in solution]
+                solution = [s.split(',') for s in solution]
+                solution = [[int(s) for s in sol] for sol in solution]
+                break
+    
+    return cost, solution
+
+
+def add_depot_to_solution(solution, depot_index=0):
+    for sol in solution:
+        sol.insert(0, depot_index)
+        sol.append(depot_index)
+    return solution

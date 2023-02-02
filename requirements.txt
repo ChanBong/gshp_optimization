@@ -1,5 +1,5 @@
-hygese==1.21.6
-openpysxl
+hygese==0.0.0.8
+openpysxl==3.1.0
 pybind11
 traveltimepy
 numpy
