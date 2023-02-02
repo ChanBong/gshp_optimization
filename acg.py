@@ -132,6 +132,13 @@ def clean_data(filename, use_cache=False):
 
     return clean_data
 
+def reset():
+    ids=[]
+    addresses = []
+    latitudes = []
+    longitudes = []
+    demand_ids = []
+
 def read_coordinates(clean_data):
 
     for ind in clean_data.index:
@@ -142,10 +149,11 @@ def read_coordinates(clean_data):
         demand_ids.append(clean_data['product_id'][ind])
 
 def normalize(matrix):
-    return (matrix+matrix.T)/2
+    return (matrix+matrix.T)
 
 def generate_distance_matrix(filename, use_cache=False):
 
+    reset()
     read_coordinates(clean_data(filename, use_cache))
 
     if use_cache:
@@ -222,4 +230,43 @@ def generate_instance(filename, use_cache=False):
     
     instance_file.close()
 
-generate_instance('bangalore_dispatch_address_finals',use_cache=True)
+def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
+
+    reset()
+    read_coordinates(clean_data(filename_pickup, use_cache=True))
+    M = len(addresses)
+    read_coordinates(clean_data(filename_delivery, use_cache=True))
+    N = len(addresses)-M
+
+    if use_cache:
+        return read_xlsx('distance_matrix_pickup_to_delivery_'+filename).to_numpy()
+
+    distance_matrix = np.zeros((M,N))
+
+    locations = []
+
+    for ind in range(M+N):
+        locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
+
+    for ind in range(M):
+      
+        departure_search = DepartureSearch(
+            id='INTER_IIT',
+            arrival_location_ids=ids[M:],
+            departure_location_id=ids[ind],
+            departure_time=datetime.now(),
+            travel_time=14400,
+            transportation=Driving(),
+            properties=[Property.TRAVEL_TIME, Property.DISTANCE],
+        )
+
+        response = sdk.time_filter(locations, [departure_search], [])
+        for location in response.results[0].locations:
+            distance_matrix[ind,int(location.id)-M] = location.properties[0].distance
+    
+    df = pd.DataFrame(distance_matrix)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickup_to_delivery_'+filename_delivery+'.xlsx', index=False)
+
+    return distance_matrix
+
+print(generate_pickup_matrix('bangalore_pickups','bangalore_dispatch_address_finals'))
