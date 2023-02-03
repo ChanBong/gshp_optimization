@@ -66,8 +66,9 @@ def run(args):
         costs, routes = solve_dynamic(env, config, args.solver_seed)
 
         costs, routes, number_of_riders = process_cost_and_routes(costs, routes)
+
         tools.write_solution(f"solutions/{name_of_instance}.json", costs, routes, number_of_riders)
-    
+
         print(f"Costs: {costs}\n")
         print(f"Routes: {routes}\n")
         print(f"Number of riders: {number_of_riders}\n")
