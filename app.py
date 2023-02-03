@@ -37,7 +37,7 @@ def static_oml():
     return jsonify(
     {
         "cost": cost,
-        "number_of_riders": number_of_riders
+        "number_of_riders": number_of_riders,
         "routes": routes
     })
 
