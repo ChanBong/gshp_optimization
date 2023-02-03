@@ -29,16 +29,15 @@ def static_oml():
     """
     data = request.get_json()
     oml_solver = OML_Solver(data)
-    cost, routes = OML_Solver.solve(oml_solver)
-    cost = str(cost[0])
-    routes = [route.tolist() for route in routes[0]]
-    
-    # sort routes by length in descending order and if length is same then sort by first element sort by first element putting the smaller first element first
-    routes = sorted(routes, key=lambda x: (-len(x), x[0]))
+    cost, routes, number_of_riders = OML_Solver.solve(oml_solver)
+
+    cost = str(cost)
+    number_of_riders = str(number_of_riders)
 
     return jsonify(
     {
         "cost": cost,
+        "number_of_riders": number_of_riders
         "routes": routes
     })
 
