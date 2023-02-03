@@ -443,6 +443,14 @@ def name2size(name: str) -> int:
     """
     return int(re.search(r'-n(\d{1,3})-', name).group(1))
 
+
+def clean_costs_and_solution(cost, solution):
+    cost = list(cost.values())[0]
+    solution = list(solution.values())[0]
+    solution = [s.tolist() for s in solution]
+
+    return cost, solution
+
 # read solution and cost from file
 def read_solution(filename):
     solution = []

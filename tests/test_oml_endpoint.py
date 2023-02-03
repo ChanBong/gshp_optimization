@@ -25,7 +25,7 @@ def test_oml_endpoint():
     }
     """
     data = {
-        "instance_name": "toy_instance.txt",
+        "instance_name": "instances/toy_instance.txt",
         "instance_seed": 1,
         "solver_seed": 1,
         "epoch_tlim": 5,
@@ -40,4 +40,5 @@ def test_oml_endpoint():
         pytest.fail("The endpoint is not working. Did you start the server?")
     
     assert response.status_code == 200
-    assert response.json() == {'cost': '41777', 'routes': [[1, 2, 11, 10, 9], [5, 7, 8, 6, 4], [3]]}
+    print(response.json())
+    assert response.json() == {'cost': '41777', 'number_of_riders': '3', 'routes': [[0, 1, 2, 11, 10, 9, 0], [0, 5, 7, 8, 6, 4, 0], [0, 3, 0]]}
