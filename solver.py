@@ -50,6 +50,8 @@ def run(args):
         assert not args.hindsight, "Cannot solve hindsight using controller"
         env = ControllerEnvironment(sys.stdin, sys.stdout)
 
+    name_of_instance = args.instance.split("/")[-1].split(".")[0]
+
     # Make sure these parameters are not used by your solver
     args.instance = None
     args.instance_seed = None
@@ -64,12 +66,7 @@ def run(args):
         costs, routes = solve_dynamic(env, config, args.solver_seed)
 
         costs, routes, number_of_riders = process_cost_and_routes(costs, routes)
-
-        # Dump costs and routes and number of ridrs to file starting with current timestamp
-        with open(f"solutions/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt", "w") as f:
-            f.write(f"Costs: {costs}\n")
-            f.write(f"Routes: {routes}\n")
-            f.write(f"Number of riders: {number_of_riders}\n")
+        tools.write_solution(f"solutions/{name_of_instance}.json", costs, routes, number_of_riders)
     
         print(f"Costs: {costs}\n")
         print(f"Routes: {routes}\n")
