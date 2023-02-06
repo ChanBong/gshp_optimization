@@ -210,7 +210,7 @@ def run(args):
     # create demand for each route
     # TODO : Remove hardcoding
     # take all delivey and pickup demands as 2
-
+    speed = 40
     print(pickup_data, "\n", pickup_distance_matrix, "\n", distance_matrix)
 
     route_demands = get_route_demands(distance_matrix.shape[0], current_solution)
@@ -228,16 +228,22 @@ def run(args):
             min_index = None
             min_route_index = None
             route_demand = route_demands[route]
-
+            distance_travelled = 0
             for index in range(len(current_solution[route])-1):
+                location0 = 0 #location of depot
+                if(index>0):
+                    location0 = current_solution[route][index-1]
                 location1 = current_solution[route][index]
                 location2 = current_solution[route][index+1]
                 # code.interact(local=locals())
                 # print(loca)
+                distance_travelled+=distance_matrix.iloc[location0, location1]
                 print(index, route_demand)
+
                 if (route_demand[index] + pickup_demand) > bag_capacity:
                     continue
-
+                if (distance_travelled) < (index+1)*speed:
+                    continue
                 detour = distance_matrix.iloc[pickup_location, location1] + distance_matrix.iloc[pickup_location, location2] - distance_matrix.iloc[location1, location2]
                 if detour < min_detour:
                     min_detour = detour
