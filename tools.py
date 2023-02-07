@@ -443,25 +443,33 @@ def name2size(name: str) -> int:
     """
     return int(re.search(r'-n(\d{1,3})-', name).group(1))
 
-# read solution and cost from file
-def read_solution(filename):
-    solution = []
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            if line.startswith('Costs:'):
-                # the line looks like this: Costs: {0: 41777}, extract the number
-                cost = int(line.split('Costs:')[1].split('}')[0].split(':')[1])
-            if line.startswith('Solution:'):
-                solution = line.split('Solution:')[1]
-                solution = solution.split('array([')[1:]
-                solution = [s.split('])')[0] for s in solution]
-                solution = [s.split(',') for s in solution]
-                solution = [[int(s) for s in sol] for sol in solution]
-                break
-    
+
+def clean_costs_and_solution(cost, solution):
+    cost = list(cost.values())[0]
+    solution = list(solution.values())[0]
+    solution = [s.tolist() for s in solution]
+
     return cost, solution
 
+# return cost, solution from the json file
+def read_solution(filename):
+    """
+    file format:
+    {"costs": 146123, "routes": [[0, 1, 9, 3, 5, 11, 4, 10, 2, 0], [0, 7, 8, 6, 0]], "number_of_riders": 2}
+    """
+    with open(filename) as f:
+        data = json.load(f)
+    cost = data['costs']
+    solution = data['routes']
+    number_of_riders = data['number_of_riders']
+    return cost, solution, number_of_riders
+
+def write_solution(filename, costs, routes, number_of_riders):
+    """
+    write solution in json format
+    """
+    with open(filename, 'w') as f:
+        json.dump({'costs': str(costs), 'routes': routes, 'number_of_riders': str(number_of_riders)}, f)
 
 def add_depot_to_solution(solution, depot_index=0):
     for sol in solution:

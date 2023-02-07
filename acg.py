@@ -44,6 +44,7 @@ def get_demands():
     for demand_id in demand_ids:
         # demands.append(get_volume_from_id(demand_id))
         demands.append(2) # chosen arbitrarily
+    demands[0] = 0
     return demands
 
 def get_geocoding(address):
@@ -240,7 +241,7 @@ def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
     
 
     if use_cache:
-        return read_xlsx('distance_matrix_pickup_to_delivery_'+filename_delivery).to_numpy()
+        return read_xlsx('distance_matrix_pickup_to_delivery_'+filename_pickup).to_numpy()
 
     distance_matrix = np.zeros((M,N+M))
 
@@ -266,7 +267,7 @@ def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
             distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
     
     df = pd.DataFrame(distance_matrix)
-    df.to_excel('data/inter_iit_data/distance_matrix_pickup_to_delivery_'+filename_delivery+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickup_to_delivery_'+filename_pickup+'.xlsx', index=False)
 
     return distance_matrix
 

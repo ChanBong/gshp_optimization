@@ -8,6 +8,7 @@ import tools
 from environment import ControllerEnvironment, VRPEnvironment
 from strategies import solve_dynamic, solve_hindsight
 from strategies.config import Config
+from tools import add_depot_to_solution, clean_costs_and_solution
 
 
 def parse_args():
@@ -21,11 +22,18 @@ def parse_args():
     parser.add_argument("--profile", action="store_true")
 
     problem_type = parser.add_mutually_exclusive_group()
-    problem_type.add_argument("--static", action="store_true")
+    problem_type.add_argument("--static", action="store_false")
     problem_type.add_argument("--hindsight", action="store_true")
 
     return parser.parse_args()
 
+def process_cost_and_routes(costs, routes):
+    costs, routes = clean_costs_and_solution(costs, routes)
+    routes = sorted(routes, key=lambda x: (-len(x), x[0]))
+    routes = add_depot_to_solution(routes)
+    number_of_riders = len(routes)
+
+    return costs, routes, number_of_riders
 
 def run(args):
     print(type(args))
@@ -42,7 +50,7 @@ def run(args):
         assert not args.hindsight, "Cannot solve hindsight using controller"
         env = ControllerEnvironment(sys.stdin, sys.stdout)
 
-    # store_name_of_instance = args.instance.split("/")[-1]
+    name_of_instance = args.instance.split("/")[-1].split(".")[0]
 
     # Make sure these parameters are not used by your solver
     args.instance = None
@@ -55,14 +63,17 @@ def run(args):
     if args.hindsight:
         solve_hindsight(env, config.static(), args.solver_seed)
     else:
-        costs, solution = solve_dynamic(env, config, args.solver_seed)
-        # Dump costs and solution to file starting with current timestamp
-        with open(f"solutions/{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt", "w") as f:
-            f.write(f"Costs: {costs}\n")
-            f.write(f"Solution: {solution}\n")
+        costs, routes = solve_dynamic(env, config, args.solver_seed)
+
+        costs, routes, number_of_riders = process_cost_and_routes(costs, routes)
+
+        tools.write_solution(f"solutions/{name_of_instance}.json", costs, routes, number_of_riders)
+
         print(f"Costs: {costs}\n")
-        print(f"Solution: {solution}\n")
-        return costs, solution
+        print(f"Routes: {routes}\n")
+        print(f"Number of riders: {number_of_riders}\n")
+    
+        return costs, routes, number_of_riders
 
 def oml_solver(instance_dict):
     '''
@@ -79,8 +90,8 @@ def oml_solver(instance_dict):
     args.static = instance_dict['static']
     args.hindsight = instance_dict['hindsight']
 
-    costs, solution = run(args)
-    return costs, solution
+    costs, solution, number_of_riders = run(args)
+    return costs, solution, number_of_riders
 
 def main():
     args = parse_args()

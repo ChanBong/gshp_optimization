@@ -57,6 +57,7 @@ def plot_solution(latitudes_longitudes, solution, depot_index=0, title="Solution
         route = np.append(route, depot_index)
         print(f"Route {route_number}: {route}")
         route_lat_long = latitudes_longitudes[route]
+        print(f"Route {route_number} lat long: {route_lat_long}")
         plt.plot(route_lat_long[:, 1], route_lat_long[:, 0], label=f"Route {route_number}")
         route_number += 1
     plt.title(title)
