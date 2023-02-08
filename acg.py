@@ -115,10 +115,10 @@ def clean_address(address):
     address = address.replace('&',"")
     address = address.replace('/',"")
     address = address.replace('?',"")
-    address = address.replace("st","")
-    address = address.replace("nd","")
-    address = address.replace("th","")
-    address = address.replace("floor","")
+    address = address.replace("st "," ")
+    address = address.replace("nd "," ")
+    address = address.replace("th "," ")
+    address = address.replace("floor "," ")
     return address
 
 def clean_address_complete(address):
@@ -148,8 +148,9 @@ def clean_address_complete(address):
 def clean_data(filename, use_cache=False, add_hub = True):
 
     if use_cache:
-        clean_data = read_xlsx('clean_data_'+filename)
-        return clean_data
+        return read_xlsx('clean_data_'+filename)
+
+    global address_cache
     read_cache()
     data = read_xlsx(filename)
     if add_hub :
@@ -161,8 +162,8 @@ def clean_data(filename, use_cache=False, add_hub = True):
 
     for index, address in enumerate(data['address']):
         print(index)
-
-        if(address in set(address_cache['address'])) :
+        original_address = address
+        if(address in set(address_cache['address'])):
             latitude = list(address_cache['latitude'].loc[address_cache['address']==address])[0]
             longitude = list(address_cache['longitude'].loc[address_cache['address']==address])[0]
             Latitude.append(latitude)
@@ -173,14 +174,15 @@ def clean_data(filename, use_cache=False, add_hub = True):
         if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
             Latitude.append(latitude)
             Longitude.append(longitude)
+            address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
             continue
         
-        original_address = address
         address = clean_address(address)
         status, latitude, longitude = get_distmat_geocoding(address)
         if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
             Latitude.append(latitude)
             Longitude.append(longitude)
+            address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
             continue
         
         address = original_address
@@ -188,13 +190,15 @@ def clean_data(filename, use_cache=False, add_hub = True):
         if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
             Latitude.append(latitude)
             Longitude.append(longitude)
+            address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude]
             continue
         
         clean_data = clean_data.drop(index=index)
 
     clean_data['latitude'] = Latitude
     clean_data['longitude'] = Longitude
-
+    address_cache = address_cache.drop_duplicates()
+    address_cache.to_excel('data/inter_iit_data/address_cache.xlsx', index=False)
     new_file = pd.ExcelWriter('data/inter_iit_data/clean_data_'+filename+'.xlsx')
     clean_data.to_excel(new_file)
     new_file.save()
@@ -283,7 +287,7 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
     else :
         return time_matrix
 
-def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False):
+def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, edge_weight = 'time'):
 
     reset()
     read_coordinates(clean_data(filename_endpoint, use_cache=True))
@@ -373,4 +377,3 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
     instance_file.close()
 
     return instance_file.name
-
