@@ -113,15 +113,16 @@ def clean_address_complete(address):
 
     return address
 
-def clean_data(filename, use_cache=False):
+def clean_data(filename, use_cache=False, add_hub = True):
 
     if use_cache:
         clean_data = read_xlsx('clean_data_'+filename)
         return clean_data
 
     data = read_xlsx(filename)
-    hub = pd.DataFrame({'address':'1075-I, 5th Cross Rd, North, Appareddipalya, Indiranagar, Bengaluru, Karnataka 560008', 'AWB':'00000000000', 'names':'GrowSimplee', 'product_id':'0', 'EDD':'13-02-2023'}, index=[0])
-    data = pd.concat([hub,data.loc[:]]).reset_index(drop=True)
+    if add_hub :
+        hub = pd.DataFrame({'address':'1075-I, 5th Cross Rd, North, Appareddipalya, Indiranagar, Bengaluru, Karnataka 560008', 'AWB':'00000000000', 'names':'GrowSimplee', 'product_id':'0', 'EDD':'13-02-2023'}, index=[0])
+        data = pd.concat([hub,data.loc[:]]).reset_index(drop=True)
     clean_data = data
     Latitude = []
     Longitude = []
@@ -224,8 +225,8 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
     time_matrix = normalize(time_matrix)
 
     df = pd.DataFrame(distance_matrix)
-    df = pd.DataFrame(time_matrix)
     df.to_excel('data/inter_iit_data/distance_matrix_'+filename+'.xlsx', index=False)
+    df = pd.DataFrame(time_matrix)
     df.to_excel('data/inter_iit_data/time_matrix_'+filename+'.xlsx', index=False)
 
     if edge_weight == 'distance' :
@@ -233,9 +234,12 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
     else :
         return time_matrix
 
-def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_time = 45000):
+def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_time = 45000, pickups = False):
 
-    matrix = generate_matrix(filename,use_cache)
+    if pickups == True :
+        matrix = generate_pickup_matrix(filename,use_cache)
+    else :
+        matrix = generate_matrix(filename,use_cache)
 
     instance_file = open("instances/instance_"+edge_weight+"_"+str(one_day_time)+"_"+filename+".txt", "w")
 
@@ -266,7 +270,7 @@ def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_t
     instance_file.write(f"SERVICE_TIME_SECTION\n")
     for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0\n")
-    instance_file.write(f"TIME_WINDOW_SECTION\n")
+    instance_file.write(f"TIME_WINDOWS_SECTION\n")
     for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0 {(time_windows[index]+1)*one_day_time}\n")
     instance_file.write(f"EOF\n")
@@ -275,45 +279,6 @@ def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_t
 
 
 
-# generate_instance('bangalore dispatch address', use_cache = True)
+generate_instance('bangalore dispatch address', use_cache = True)
 
 
-# def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
-
-#     reset()
-#     read_coordinates(clean_data(filename_delivery, use_cache=True))
-#     N = len(addresses)
-#     read_coordinates(clean_data(filename_pickup, use_cache=True))
-#     M = len(addresses)-N
-    
-
-#     if use_cache:
-#         return read_xlsx('distance_matrix_pickup_to_delivery_'+filename_pickup).to_numpy()
-
-#     distance_matrix = np.zeros((M,N+M))
-
-#     locations = []
-
-#     for ind in range(M+N):
-#         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
-
-#     for ind in range(N,M+N):
-      
-#         departure_search = DepartureSearch(
-#             id='INTER_IIT',
-#             arrival_location_ids=ids,
-#             departure_location_id=ids[ind],
-#             departure_time=datetime.now(),
-#             travel_time=14400,
-#             transportation=Driving(),
-#             properties=[Property.TRAVEL_TIME, Property.DISTANCE],
-#         )
-
-#         response = sdk.time_filter(locations, [departure_search], [])
-#         for location in response.results[0].locations:
-#             distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
-    
-#     df = pd.DataFrame(distance_matrix)
-#     df.to_excel('data/inter_iit_data/time_matrix_pickup_to_delivery_'+filename_pickup+'.xlsx', index=False)
-
-#     return distance_matrix
