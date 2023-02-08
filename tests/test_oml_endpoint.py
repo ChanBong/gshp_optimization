@@ -22,17 +22,19 @@ def test_oml_endpoint():
     profile: True,
     static: "boolean_value_wheater_we_want_to_solve_static_or_dynamic",
     hindsight: False
+    use_cache: True
     }
     """
     data = {
-        "instance_name": "instances/toy_instance.txt",
+        "instance_name": "bangalore dispatch address",
         "instance_seed": 1,
         "solver_seed": 1,
         "epoch_tlim": 5,
         "config_loc": "configs/solver.toml",
         "profile": True,
         "static": True,
-        "hindsight": False
+        "hindsight": False,
+        "use_cache": True
     }
     try:
         response = requests.post(url, data=json.dumps(data), headers=headers)

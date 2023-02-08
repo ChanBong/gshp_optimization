@@ -4,7 +4,8 @@ import pstats
 import sys
 from datetime import datetime
 import code
-
+import pandas as pd
+from acg import generate_instance
 import tools
 from environment import ControllerEnvironment, VRPEnvironment
 from strategies import solve_dynamic, solve_hindsight
@@ -28,13 +29,30 @@ def parse_args():
 
     return parser.parse_args()
 
-def process_cost_and_routes(costs, routes):
+def process_cost_and_routes(costs, routes, name_of_instance):
     costs, routes = clean_costs_and_solution(costs, routes)
     routes = sorted(routes, key=lambda x: (-len(x), x[0]))
+    routes = sync_route(routes, name_of_instance)
     routes = add_depot_to_solution(routes)
+    # make every element of routes a string
+    for i in range(len(routes)):
+        for j in range(len(routes[i])):
+            routes[i][j] = str(routes[i][j])
     number_of_riders = len(routes)
 
     return costs, routes, number_of_riders
+
+def sync_route(routes, name_of_instance):
+    '''
+    this function is used to sync the routes with the database
+    '''
+    name_of_instance = name_of_instance.split("_")[3]
+    cleaned_data = pd.read_excel(f"data/inter_iit_data/clean_data_{name_of_instance}.xlsx")
+    for route in routes:
+        for i in range(len(route)):
+            route[i] = cleaned_data.iloc[route[i]].AWB
+
+    return routes
 
 def run(args):
     print(type(args))
@@ -66,10 +84,12 @@ def run(args):
     else:
         costs, routes = solve_dynamic(env, config, args.solver_seed)
         
-        costs, routes, number_of_riders = process_cost_and_routes(costs, routes)
-        current_time = datetime.now().isoformat()
-        tools.write_solution(f"solutions/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
+        costs, routes, number_of_riders = process_cost_and_routes(costs, routes, name_of_instance=name_of_instance)
 
+        # current_time = datetime.now().isoformat()
+        # tools.write_solution(f"solutions/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
+
+        print(f"name_of_instance: {name_of_instance}\n")
         print(f"Costs: {costs}\n")
         print(f"Routes: {routes}\n")
         print(f"Number of riders: {number_of_riders}\n")
@@ -82,7 +102,10 @@ def oml_solver(instance_dict):
     convert a dictionary to a args namespace and then call the run function and return the costs and solution
     '''
     args = argparse.Namespace()
-    args.instance = instance_dict['instance_name']
+
+    instance_name = generate_instance(filename=instance_dict['instance_name'], use_cache=instance_dict['use_cache'])
+
+    args.instance = instance_name
     args.instance_seed = instance_dict['instance_seed']
     args.solver_seed = instance_dict['solver_seed']
     args.epoch_tlim = instance_dict['epoch_tlim']
