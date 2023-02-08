@@ -5,6 +5,7 @@ from geopy.geocoders import Nominatim
 import pyproj
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
 
 def get_duration_matrix(latitudes_longitudes):
     # get distance matrix from a list of longitudes and latitudes. Make the upper half of the matrix and copy it to the lower half to save time.
@@ -52,7 +53,7 @@ def plot_solution(latitudes_longitudes, solution, depot_index=0, title="Solution
     # add depot in front of latitudes_longitudes
     latitudes_longitudes = np.insert(latitudes_longitudes, 0, depot, axis=0)
     route_number = 1
-    for route in solution:
+    for route in solution[:7]:
         route = np.insert(route, 0, depot_index)
         route = np.append(route, depot_index)
         print(f"Route {route_number}: {route}")
@@ -62,5 +63,6 @@ def plot_solution(latitudes_longitudes, solution, depot_index=0, title="Solution
         route_number += 1
     plt.title(title)
     plt.legend()
-    plt.savefig(f"{title}.png")
+    current_time = datetime.now().strftime("%H:%M:%S")
+    plt.savefig(f"solutions/{title}-{current_time}.png")
     plt.show()

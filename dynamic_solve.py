@@ -297,7 +297,7 @@ data = {
     "solution_instance": "solutions/instance_model_delivery.json",
     "pickup_folder": "pickup",
     "delivery_cache": True,
-    "pickup_cache": False,
+    "pickup_cache": True,
     "hindsight": False
 }
 
@@ -311,8 +311,6 @@ def reset():
         os.remove(MASTER_LOCATION_FILE)
     if os.path.exists(PROCESSED_PICKUP_FILE):
         os.remove(PROCESSED_PICKUP_FILE)
-
-print(oml_dynamic_solver(data))
 
 
 # def main():

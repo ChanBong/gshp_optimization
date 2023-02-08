@@ -3,6 +3,7 @@ import cProfile
 import pstats
 import sys
 from datetime import datetime
+import code
 
 import tools
 from environment import ControllerEnvironment, VRPEnvironment
@@ -64,10 +65,10 @@ def run(args):
         solve_hindsight(env, config.static(), args.solver_seed)
     else:
         costs, routes = solve_dynamic(env, config, args.solver_seed)
-
+        
         costs, routes, number_of_riders = process_cost_and_routes(costs, routes)
-
-        tools.write_solution(f"solutions/{name_of_instance}.json", costs, routes, number_of_riders)
+        current_time = datetime.now().isoformat()
+        tools.write_solution(f"solutions/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
 
         print(f"Costs: {costs}\n")
         print(f"Routes: {routes}\n")
