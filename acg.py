@@ -353,7 +353,7 @@ def generate_ptop_matrix(filename_pickup, filename_delivery, use_cache=False, ed
     for ind in range(M+N):
         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
 
-    for ind in range(N,M+N):
+    for ind in range(M+N):
         print(ind)
         departure_search = DepartureSearch(
             id='INTER_IIT',
@@ -449,3 +449,13 @@ def get_endpoints(filename,solution_filename="solution_example"):
 
 # get_endpoints('bangalore dispatch address')
 # generate_instance(filename = get_endpoints('bangalore dispatch address'), pickup_filename = 'bangalore_pickups', pickups = True,use_cache = True)
+
+
+def print_sol(filename,solution_filename="solution_example"):
+
+    cost, routes, no_of_riders = tools.read_solution('solutions/'+solution_filename)
+    for ind,route in enumerate(routes):
+        data = read_xlsx('clean_data_'+filename).iloc[route][['latitude','longitude']]
+        data.to_excel('routes/routelatlong'+str(ind+1)+'.xlsx',index = False)
+
+# print_sol('bangalore dispatch address')
