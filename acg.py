@@ -1,6 +1,8 @@
 import requests, re
 import numpy as np
 import pandas as pd
+import json
+import os
 
 from datetime import datetime
 from traveltimepy.dto import Location, Coordinates
@@ -20,6 +22,25 @@ latitudes = []
 longitudes = []
 demand_ids = []
 time_windows = []
+
+def fetch_delivery_from_api():
+    url = "https://interiit.msqu4re.me/delivery"
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    response = requests.get(url, headers=headers)
+
+    with open('delivery.json', 'w') as f:
+        json.dump(response.json(), f)
+
+    with open('delivery.json', 'r') as f:
+        json_data = json.loads(f.read())
+
+    data_from_api = pd.json_normalize(json_data, record_path=['deliveries']) 
+    columns = ['id', 'type', 'address', 'AWB', 'names', 'product_id', 'EDD']
+    data_from_api.columns = columns   
+    data_from_api.to_excel('data/inter_iit_data/deliveries.xlsx', index=False)
+
+    os.remove('delivery.json')
+
 
 def read_xlsx(filename):
     data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
@@ -325,4 +346,3 @@ def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_t
 
     return instance_file.name
 
-generate_instance('bangalore dispatch address', use_cache = True)
