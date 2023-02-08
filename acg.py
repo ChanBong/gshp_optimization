@@ -1,4 +1,4 @@
-import requests
+import requests, re
 import numpy as np
 import pandas as pd
 
@@ -19,16 +19,17 @@ addresses = []
 latitudes = []
 longitudes = []
 demand_ids = []
+time_windows = []
 
 def read_xlsx(filename):
     data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
     return data
 
 def read_num_vehicles():
-    return 5 # chosen arbitrarily
+    return len(addresses)/20 # chosen arbitrarily
 
 def read_vehicle_capacity():
-    return 20 # chosen arbitrarily
+    return 25 # chosen arbitrarily
 
 def read_depot_index():
     return 0 # chosen arbitrarily
@@ -43,12 +44,12 @@ def get_demands():
     demands = []
     for demand_id in demand_ids:
         # demands.append(get_volume_from_id(demand_id))
-        demands.append(2) # chosen arbitrarily
+        demands.append(1) # chosen arbitrarily
     demands[0] = 0
     return demands
 
-def get_geocoding(address):
-    url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=sPIe2SlBdFdJTI0sO269iEW1rPkV9'
+def get_distmat_geocoding(address):
+    url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=xtT8ArMnjkIXCLqiSDRsNraE6u2ap'
     resp = requests.get(url=url)
     data = resp.json()
 
@@ -57,7 +58,7 @@ def get_geocoding(address):
             latitude = data['result'][0]['geometry']['location']['lat']
             longitude = data['result'][0]['geometry']['location']['lng']
             return True, latitude, longitude
-
+    print(data['status'])
     return False, 0., 0.
 
 def get_geokeo_geocoding(address):
@@ -72,7 +73,7 @@ def get_geokeo_geocoding(address):
             latitude = data['results'][0]['geometry']['location']['lat']
             longitude = data['results'][0]['geometry']['location']['lng']
             return True, latitude, longitude
-
+    print(data['status'])
     return False, 0., 0.
 
 def clean_address(address):
@@ -88,20 +89,46 @@ def clean_address(address):
     address = address.replace("floor","")
     return address
 
+def clean_address_complete(address):
+
+    address = address.lower()
+    # address = address.replace(',',' ')
+    address = address.replace('bangalore',' ')
+
+    stop_words = ['#','&','/','?','floor ','behind ','adjacent to ','opposite to ','in front of ','in front ','next to ','next ','above ','off ']
+    locality = ['jp nagar','hsr','indiranagar','mth','marathahalli','kr puram']
+    for word in stop_words:
+        address = address.replace(word," ")
+
+    for word in locality:
+        res = address.find(word)
+        if res == -1:
+            continue
+        address = address.replace(word,"")
+        address = address + " " + word
+        
+
+    address = address + ', bangalore'
+    address = re.sub(',(,| )+',', ', address)
+
+    return address
+
 def clean_data(filename, use_cache=False):
 
     if use_cache:
-        clean_data = read_xlsx('cleaned_data_'+filename)
+        clean_data = read_xlsx('clean_data_'+filename)
         return clean_data
 
     data = read_xlsx(filename)
+    hub = pd.DataFrame({'address':'1075-I, 5th Cross Rd, North, Appareddipalya, Indiranagar, Bengaluru, Karnataka 560008', 'AWB':'00000000000', 'names':'GrowSimplee', 'product_id':'0', 'EDD':'13-02-2023'}, index=[0])
+    data = pd.concat([hub,data.loc[:]]).reset_index(drop=True)
     clean_data = data
     Latitude = []
     Longitude = []
 
     for index, address in enumerate(data['address']):
-
-        status, latitude, longitude = get_geocoding(address)
+        print(index)
+        status, latitude, longitude = get_distmat_geocoding(address)
         if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
             Latitude.append(latitude)
             Longitude.append(longitude)
@@ -109,7 +136,7 @@ def clean_data(filename, use_cache=False):
         
         original_address = address
         address = clean_address(address)
-        status, latitude, longitude = get_geocoding(address)
+        status, latitude, longitude = get_distmat_geocoding(address)
         if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
             Latitude.append(latitude)
             Longitude.append(longitude)
@@ -127,7 +154,7 @@ def clean_data(filename, use_cache=False):
     clean_data['latitude'] = Latitude
     clean_data['longitude'] = Longitude
 
-    new_file = pd.ExcelWriter('data/inter_iit_data/cleaned_data_'+filename+'.xlsx')
+    new_file = pd.ExcelWriter('data/inter_iit_data/clean_data_'+filename+'.xlsx')
     clean_data.to_excel(new_file)
     new_file.save()
 
@@ -139,6 +166,7 @@ def reset():
     latitudes = []
     longitudes = []
     demand_ids = []
+    time_windows = []
 
 def read_coordinates(clean_data):
 
@@ -148,20 +176,27 @@ def read_coordinates(clean_data):
         longitudes.append(clean_data['longitude'][ind])
         latitudes.append(clean_data['latitude'][ind])
         demand_ids.append(clean_data['product_id'][ind])
+        time_windows.append(int(clean_data['EDD'][ind].split('-')[0]))
+    
+    minimum_time_window = min(time_windows)
+    for index, _ in enumerate(time_windows):
+        time_windows[index] = time_windows[index] - minimum_time_window
+    time_windows[0] = max(time_windows[1:])
 
 def normalize(matrix):
-    return (matrix+matrix.T)
+    return (matrix+matrix.T)/2
 
-def generate_distance_matrix(filename, use_cache=False):
+def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
 
     reset()
     read_coordinates(clean_data(filename, use_cache))
 
     if use_cache:
-        return read_xlsx('distance_matrix_'+filename).to_numpy()
+        return read_xlsx(edge_weight+'_matrix_'+filename).to_numpy()
 
     N = len(addresses)
     distance_matrix = np.zeros((N,N))
+    time_matrix = np.zeros((N,N))
 
     locations = []
 
@@ -169,7 +204,7 @@ def generate_distance_matrix(filename, use_cache=False):
         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
 
     for ind in range(N):
-      
+        print(ind)
         departure_search = DepartureSearch(
             id='INTER_IIT',
             arrival_location_ids=ids,
@@ -183,38 +218,45 @@ def generate_distance_matrix(filename, use_cache=False):
         response = sdk.time_filter(locations, [departure_search], [])
         for location in response.results[0].locations:
             distance_matrix[ind,int(location.id)] = location.properties[0].distance
+            time_matrix[ind,int(location.id)] = location.properties[0].travel_time
     
     distance_matrix = normalize(distance_matrix)
+    time_matrix = normalize(time_matrix)
 
     df = pd.DataFrame(distance_matrix)
+    df = pd.DataFrame(time_matrix)
     df.to_excel('data/inter_iit_data/distance_matrix_'+filename+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/time_matrix_'+filename+'.xlsx', index=False)
 
-    return distance_matrix
+    if edge_weight == 'distance' :
+        return distance_matrix
+    else :
+        return time_matrix
 
-def generate_instance(filename, use_cache=False):
+def generate_instance(filename, use_cache=False, edge_weight = "time"):
 
-    distance_matrix = generate_distance_matrix(filename,use_cache)
+    matrix = generate_matrix(filename,use_cache)
 
-    instance_file = open("instances/instance_"+filename+".txt", "w")
+    instance_file = open("instances/instance_"+edge_weight+"_"+filename+".txt", "w")
 
     instance_file.write(f"NAME : {filename.upper()}\n")
     instance_file.write(f"COMMENT : INTER_IIT\n")
     instance_file.write(f"TYPE : CVRP\n")
-    instance_file.write(f"DIMENSION : {distance_matrix.shape[0]}\n")
+    instance_file.write(f"DIMENSION : {matrix.shape[0]}\n")
     instance_file.write(f"VEHICLES : {read_num_vehicles()}\n")
     instance_file.write(f"EDGE_WEIGHT_TYPE : EXPLICIT\n")
     instance_file.write(f"EDGE_WEIGHT_FORMAT : FULL_MATRIX\n")
     instance_file.write(f"CAPACITY : {read_vehicle_capacity()}\n")
 
     instance_file.write(f"EDGE_WEIGHT_SECTION\n")
-    for row in distance_matrix:
+    for row in matrix:
         for item in row:
             instance_file.write(f"{item.astype(int)} ")
         instance_file.write(f"\n")
 
     instance_file.write(f"NODE_COORD_SECTION\n")
     for index, coordinates in enumerate(get_coordinates()):
-        instance_file.write(f"{index+1} {(coordinates[0]*10000).astype(int)} {(coordinates[1]*10000).astype(int)}\n")
+        instance_file.write(f"{index+1} {(int)(coordinates[0]*10000)} {(int)(coordinates[1]*10000)}\n")
 
     instance_file.write(f"DEMAND_SECTION\n")
     for index, demand in enumerate(get_demands()):
@@ -222,53 +264,56 @@ def generate_instance(filename, use_cache=False):
     
     instance_file.write(f"DEPOT_SECTION\n{read_depot_index()+1}\n-1\n")
     instance_file.write(f"SERVICE_TIME_SECTION\n")
-    for index in range(distance_matrix.shape[0]):
+    for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0\n")
-    instance_file.write(f"TIME_WINDOW_SECTION\n")
-    for index in range(distance_matrix.shape[0]):
-        instance_file.write(f"{index+1} 0 100000\n")
+    instance_file.write(f"time_windows_SECTION\n")
+    for index in range(matrix.shape[0]):
+        instance_file.write(f"{index+1} 0 {time_windows[index]*45000}\n")
     instance_file.write(f"EOF\n")
     
     instance_file.close()
 
-def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
 
-    reset()
-    read_coordinates(clean_data(filename_delivery, use_cache=True))
-    N = len(addresses)
-    read_coordinates(clean_data(filename_pickup, use_cache=True))
-    M = len(addresses)-N
+
+# generate_instance('bangalore dispatch address', use_cache = True)
+
+
+# def generate_pickup_matrix(filename_pickup, filename_delivery, use_cache=False):
+
+#     reset()
+#     read_coordinates(clean_data(filename_delivery, use_cache=True))
+#     N = len(addresses)
+#     read_coordinates(clean_data(filename_pickup, use_cache=True))
+#     M = len(addresses)-N
     
 
-    if use_cache:
-        return read_xlsx('distance_matrix_pickup_to_delivery_'+filename_pickup).to_numpy()
+#     if use_cache:
+#         return read_xlsx('distance_matrix_pickup_to_delivery_'+filename_pickup).to_numpy()
 
-    distance_matrix = np.zeros((M,N+M))
+#     distance_matrix = np.zeros((M,N+M))
 
-    locations = []
+#     locations = []
 
-    for ind in range(M+N):
-        locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
+#     for ind in range(M+N):
+#         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
 
-    for ind in range(N,M+N):
+#     for ind in range(N,M+N):
       
-        departure_search = DepartureSearch(
-            id='INTER_IIT',
-            arrival_location_ids=ids,
-            departure_location_id=ids[ind],
-            departure_time=datetime.now(),
-            travel_time=14400,
-            transportation=Driving(),
-            properties=[Property.TRAVEL_TIME, Property.DISTANCE],
-        )
+#         departure_search = DepartureSearch(
+#             id='INTER_IIT',
+#             arrival_location_ids=ids,
+#             departure_location_id=ids[ind],
+#             departure_time=datetime.now(),
+#             travel_time=14400,
+#             transportation=Driving(),
+#             properties=[Property.TRAVEL_TIME, Property.DISTANCE],
+#         )
 
-        response = sdk.time_filter(locations, [departure_search], [])
-        for location in response.results[0].locations:
-            distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
+#         response = sdk.time_filter(locations, [departure_search], [])
+#         for location in response.results[0].locations:
+#             distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
     
-    df = pd.DataFrame(distance_matrix)
-    df.to_excel('data/inter_iit_data/distance_matrix_pickup_to_delivery_'+filename_pickup+'.xlsx', index=False)
+#     df = pd.DataFrame(distance_matrix)
+#     df.to_excel('data/inter_iit_data/time_matrix_pickup_to_delivery_'+filename_pickup+'.xlsx', index=False)
 
-    return distance_matrix
-
-# generate_pickup_matrix('bangalore_pickups', 'bangalore_dispatch_address_finals')
+#     return distance_matrix
