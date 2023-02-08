@@ -234,6 +234,52 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
     else :
         return time_matrix
 
+def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False):
+
+    reset()
+    read_coordinates(clean_data(filename_delivery, use_cache=True))
+    N = len(addresses)
+    read_coordinates(clean_data(filename_pickup, use_cache=True, add_hub = False))
+    M = len(addresses)-N
+    
+    if use_cache:
+        return read_xlsx(edge_weight+'_matrix_pickups_to_endpoint_'+filename_pickup).to_numpy()
+
+    distance_matrix = np.zeros((M,N+M))
+    time_matrix = np.zeros((M,N+M))
+
+    locations = []
+
+    for ind in range(M+N):
+        locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
+
+    for ind in range(N,M+N):
+      
+        departure_search = DepartureSearch(
+            id='INTER_IIT',
+            arrival_location_ids=ids,
+            departure_location_id=ids[ind],
+            departure_time=datetime.now(),
+            travel_time=14400,
+            transportation=Driving(),
+            properties=[Property.TRAVEL_TIME, Property.DISTANCE],
+        )
+
+        response = sdk.time_filter(locations, [departure_search], [])
+        for location in response.results[0].locations:
+            distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
+            time_matrix[ind-N,int(location.id)] = location.properties[0].travel_time
+    
+    df = pd.DataFrame(distance_matrix)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_endpoint_'+filename+'.xlsx', index=False)
+    df = pd.DataFrame(time_matrix)
+    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_endpoint_'+filename+'.xlsx', index=False)
+
+    if edge_weight == 'distance' :
+        return distance_matrix
+    else :
+        return time_matrix
+
 def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_time = 45000, pickups = False):
 
     if pickups == True :
@@ -270,15 +316,13 @@ def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_t
     instance_file.write(f"SERVICE_TIME_SECTION\n")
     for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0\n")
-    instance_file.write(f"TIME_WINDOWS_SECTION\n")
+    instance_file.write(f"TIME_WINDOW_SECTION\n")
     for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0 {(time_windows[index]+1)*one_day_time}\n")
     instance_file.write(f"EOF\n")
     
     instance_file.close()
 
-
+    return instance_file.name
 
 generate_instance('bangalore dispatch address', use_cache = True)
-
-
