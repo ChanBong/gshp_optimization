@@ -26,7 +26,7 @@ def read_xlsx(filename):
     return data
 
 def read_num_vehicles():
-    return len(addresses)/20 # chosen arbitrarily
+    return int(len(addresses)/20) # chosen arbitrarily
 
 def read_vehicle_capacity():
     return 25 # chosen arbitrarily
@@ -233,11 +233,11 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
     else :
         return time_matrix
 
-def generate_instance(filename, use_cache=False, edge_weight = "time"):
+def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_time = 45000):
 
     matrix = generate_matrix(filename,use_cache)
 
-    instance_file = open("instances/instance_"+edge_weight+"_"+filename+".txt", "w")
+    instance_file = open("instances/instance_"+edge_weight+"_"+str(one_day_time)+"_"+filename+".txt", "w")
 
     instance_file.write(f"NAME : {filename.upper()}\n")
     instance_file.write(f"COMMENT : INTER_IIT\n")
@@ -266,9 +266,9 @@ def generate_instance(filename, use_cache=False, edge_weight = "time"):
     instance_file.write(f"SERVICE_TIME_SECTION\n")
     for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0\n")
-    instance_file.write(f"time_windows_SECTION\n")
+    instance_file.write(f"TIME_WINDOW_SECTION\n")
     for index in range(matrix.shape[0]):
-        instance_file.write(f"{index+1} 0 {time_windows[index]*45000}\n")
+        instance_file.write(f"{index+1} 0 {(time_windows[index]+1)*one_day_time}\n")
     instance_file.write(f"EOF\n")
     
     instance_file.close()
