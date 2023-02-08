@@ -301,10 +301,10 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False):
     else :
         return time_matrix
 
-def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_time = 45000, pickups = False):
+def generate_instance(filename, use_cache = False, edge_weight = "time", one_day_time = 45000, pickups = False, pickup_filename = ""):
 
     if pickups == True :
-        matrix = generate_pickup_matrix(filename,use_cache)
+        matrix = generate_pickup_matrix(pickup_filename, filename, use_cache)
     else :
         matrix = generate_matrix(filename,use_cache)
 
@@ -345,4 +345,3 @@ def generate_instance(filename, use_cache=False, edge_weight = "time", one_day_t
     instance_file.close()
 
     return instance_file.name
-
