@@ -41,7 +41,6 @@ def fetch_delivery_from_api():
 
     os.remove('delivery.json')
 
-
 def read_xlsx(filename):
     data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
     return data
@@ -68,6 +67,13 @@ def get_demands():
         demands.append(1) # chosen arbitrarily
     demands[0] = 0
     return demands
+
+def get_avg_speed(filename):
+
+    distance = read_xlsx('distance_matrix_'+filename)
+    time = read_xlsx('time_matrix_'+filename)
+
+    return distance.sum().sum()/time.sum().sum()
 
 def get_distmat_geocoding(address):
     url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=xtT8ArMnjkIXCLqiSDRsNraE6u2ap'
@@ -183,6 +189,7 @@ def clean_data(filename, use_cache=False, add_hub = True):
     return clean_data
 
 def reset():
+    global ids, addresses, latitudes, longitudes, demand_ids, time_windows
     ids=[]
     addresses = []
     latitudes = []
@@ -258,7 +265,7 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
 def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False):
 
     reset()
-    read_coordinates(clean_data(filename_delivery, use_cache=True))
+    read_coordinates(clean_data(filename_endpoint, use_cache=True))
     N = len(addresses)
     read_coordinates(clean_data(filename_pickup, use_cache=True, add_hub = False))
     M = len(addresses)-N
@@ -292,9 +299,9 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False):
             time_matrix[ind-N,int(location.id)] = location.properties[0].travel_time
     
     df = pd.DataFrame(distance_matrix)
-    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_endpoint_'+filename+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_endpoint'+filename+'.xlsx', index=False)
     df = pd.DataFrame(time_matrix)
-    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_endpoint_'+filename+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_endpoint'+filename+'.xlsx', index=False)
 
     if edge_weight == 'distance' :
         return distance_matrix
