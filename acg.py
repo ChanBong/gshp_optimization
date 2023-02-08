@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import json
 import os
+import tools
 
 from datetime import datetime
 from traveltimepy.dto import Location, Coordinates
@@ -22,6 +23,7 @@ addresses = []
 latitudes = []
 longitudes = []
 demand_ids = []
+demands = []
 time_windows = []
 
 def fetch_delivery_from_api():
@@ -54,24 +56,16 @@ def read_num_vehicles():
     return int(len(addresses)/20) # chosen arbitrarily
 
 def read_vehicle_capacity():
-    return 25 # chosen arbitrarily
+    return 30
 
 def read_depot_index():
-    return 0 # chosen arbitrarily
+    return 0 
 
 def get_coordinates():
     coordinates = []
     for latitude, longitude in zip(latitudes, longitudes):
         coordinates.append((latitude,longitude))
     return coordinates
-
-def get_demands():
-    demands = []
-    for demand_id in demand_ids:
-        # demands.append(get_volume_from_id(demand_id))
-        demands.append(1) # chosen arbitrarily
-    demands[0] = 0
-    return demands
 
 def get_avg_speed(filename):
 
@@ -214,15 +208,16 @@ def add_to_cache(filename):
     data.to_excel('data/inter_iit_data/address_cache.xlsx', index=False)
 
 def reset():
-    global ids, addresses, latitudes, longitudes, demand_ids, time_windows
+    global ids, addresses, latitudes, longitudes, demand_ids, demands, time_windows
     ids=[]
     addresses = []
     latitudes = []
     longitudes = []
     demand_ids = []
+    demands = []
     time_windows = []
 
-def read_coordinates(clean_data):
+def read_coordinates(clean_data, endpoints = False, pickups = False):
 
     for ind in clean_data.index:
         ids.append(str(len(ids)))
@@ -230,12 +225,18 @@ def read_coordinates(clean_data):
         longitudes.append(clean_data['longitude'][ind])
         latitudes.append(clean_data['latitude'][ind])
         demand_ids.append(clean_data['product_id'][ind])
-        time_windows.append(int(clean_data['EDD'][ind].split('-')[0]))
-    
-    minimum_time_window = min(time_windows)
-    for index, _ in enumerate(time_windows):
-        time_windows[index] = time_windows[index] - minimum_time_window
-    time_windows[0] = max(time_windows[1:])
+        # demands.append(get_volume(demand_ids[ind]))
+        if endpoints :
+            demands.append(1000)
+        else :
+            demands.append(1)
+        if not (pickups or endpoints) :
+            time_windows.append(int(str(clean_data['EDD'][ind]).split('-')[0]))
+    if not (pickups or endpoints) :
+        minimum_time_window = min(time_windows)
+        for index, _ in enumerate(time_windows):
+            time_windows[index] = time_windows[index] - minimum_time_window
+        time_windows[0] = max(time_windows[1:])
 
 def normalize(matrix):
     return (matrix+matrix.T)/2
@@ -290,9 +291,9 @@ def generate_matrix(filename, use_cache=False, edge_weight = 'time'):
 def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, edge_weight = 'time'):
 
     reset()
-    read_coordinates(clean_data(filename_endpoint, use_cache=True))
+    read_coordinates(clean_data(filename_endpoint, use_cache), endpoints = True)
     N = len(addresses)
-    read_coordinates(clean_data(filename_pickup, use_cache=True, add_hub = False))
+    read_coordinates(clean_data(filename_pickup, use_cache, add_hub = False), pickups = True)
     M = len(addresses)-N
     
     if use_cache:
@@ -307,7 +308,7 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, 
         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
 
     for ind in range(N,M+N):
-      
+        print(ind)
         departure_search = DepartureSearch(
             id='INTER_IIT',
             arrival_location_ids=ids,
@@ -324,9 +325,55 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, 
             time_matrix[ind-N,int(location.id)] = location.properties[0].travel_time
     
     df = pd.DataFrame(distance_matrix)
-    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_endpoint'+filename+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_endpoint_'+filename_pickup+'.xlsx', index=False)
     df = pd.DataFrame(time_matrix)
-    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_endpoint'+filename+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_endpoint_'+filename_pickup+'.xlsx', index=False)
+
+    if edge_weight == 'distance' :
+        return distance_matrix
+    else :
+        return time_matrix
+
+def generate_ptop_matrix(filename_pickup, filename_delivery, use_cache=False, edge_weight = 'time'):
+
+    reset()
+    read_coordinates(clean_data(filename_delivery, use_cache), endpoints = True)
+    N = len(addresses)
+    read_coordinates(clean_data(filename_pickup, use_cache, add_hub = False), pickups = True)
+    M = len(addresses)-N
+    
+    if use_cache:
+        return read_xlsx(edge_weight+'_matrix_pickups_to_delivery_'+filename_pickup).to_numpy()
+
+    distance_matrix = np.zeros((M,N+M))
+    time_matrix = np.zeros((M,N+M))
+
+    locations = []
+
+    for ind in range(M+N):
+        locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
+
+    for ind in range(N,M+N):
+        print(ind)
+        departure_search = DepartureSearch(
+            id='INTER_IIT',
+            arrival_location_ids=ids,
+            departure_location_id=ids[ind],
+            departure_time=datetime.now(),
+            travel_time=14400,
+            transportation=Driving(),
+            properties=[Property.TRAVEL_TIME, Property.DISTANCE],
+        )
+
+        response = sdk.time_filter(locations, [departure_search], [])
+        for location in response.results[0].locations:
+            distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
+            time_matrix[ind-N,int(location.id)] = location.properties[0].travel_time
+    
+    df = pd.DataFrame(distance_matrix)
+    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_delivery_'+filename_pickup+'.xlsx', index=False)
+    df = pd.DataFrame(time_matrix)
+    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_delivery_'+filename_pickup+'.xlsx', index=False)
 
     if edge_weight == 'distance' :
         return distance_matrix
@@ -346,7 +393,10 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
     instance_file.write(f"COMMENT : INTER_IIT\n")
     instance_file.write(f"TYPE : CVRP\n")
     instance_file.write(f"DIMENSION : {matrix.shape[0]}\n")
-    instance_file.write(f"VEHICLES : {read_num_vehicles()}\n")
+    if pickups :
+        instance_file.write(f"VEHICLES : {read_xlsx(filename).shape[0]-1}\n")
+    else :
+        instance_file.write(f"VEHICLES : {read_num_vehicles()}\n")
     instance_file.write(f"EDGE_WEIGHT_TYPE : EXPLICIT\n")
     instance_file.write(f"EDGE_WEIGHT_FORMAT : FULL_MATRIX\n")
     instance_file.write(f"CAPACITY : {read_vehicle_capacity()}\n")
@@ -362,7 +412,8 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
         instance_file.write(f"{index+1} {(int)(coordinates[0]*10000)} {(int)(coordinates[1]*10000)}\n")
 
     instance_file.write(f"DEMAND_SECTION\n")
-    for index, demand in enumerate(get_demands()):
+    demands[0] = 0
+    for index, demand in enumerate(demands):
         instance_file.write(f"{index+1} {demand}\n")
     
     instance_file.write(f"DEPOT_SECTION\n{read_depot_index()+1}\n-1\n")
@@ -370,10 +421,31 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
     for index in range(matrix.shape[0]):
         instance_file.write(f"{index+1} 0\n")
     instance_file.write(f"TIME_WINDOW_SECTION\n")
-    for index in range(matrix.shape[0]):
-        instance_file.write(f"{index+1} 0 {(time_windows[index]+1)*one_day_time}\n")
+
+    if pickups :
+        for index in range(matrix.shape[0]):
+            instance_file.write(f"{index+1} 0 {one_day_time}\n")
+    else :
+        for index in range(matrix.shape[0]):
+            instance_file.write(f"{index+1} 0 {(time_windows[index]+1)*one_day_time}\n")
+    
     instance_file.write(f"EOF\n")
     
     instance_file.close()
 
     return instance_file.name
+
+def get_endpoints(filename,solution_filename="solution_example"):
+
+    cost, routes, no_of_riders = tools.read_solution('solutions/'+solution_filename)
+    endpoints = [0]
+    for route in routes:
+        endpoints.append(route[-2])
+
+    data = read_xlsx('clean_data_'+filename).iloc[endpoints]
+    data.to_excel('data/inter_iit_data/'+filename+'_'+solution_filename+'.xlsx',index = False)
+
+    return filename+'_'+solution_filename
+
+# get_endpoints('bangalore dispatch address')
+# generate_instance(filename = get_endpoints('bangalore dispatch address'), pickup_filename = 'bangalore_pickups', pickups = True,use_cache = True)
