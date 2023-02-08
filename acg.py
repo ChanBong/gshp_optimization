@@ -16,6 +16,7 @@ bangalore_longitude = 77.5946
 
 sdk = TravelTimeSdk('457cb73e', '423d700709835c86c392e5134aee4a11')
 
+address_cache = pd.DataFrame()
 ids=[]
 addresses = []
 latitudes = []
@@ -44,6 +45,10 @@ def fetch_delivery_from_api():
 def read_xlsx(filename):
     data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
     return data
+
+def read_cache():
+    global address_cache
+    address_cache = read_xlsx('address_cache')
 
 def read_num_vehicles():
     return int(len(addresses)/20) # chosen arbitrarily
@@ -145,7 +150,7 @@ def clean_data(filename, use_cache=False, add_hub = True):
     if use_cache:
         clean_data = read_xlsx('clean_data_'+filename)
         return clean_data
-
+    read_cache()
     data = read_xlsx(filename)
     if add_hub :
         hub = pd.DataFrame({'address':'1075-I, 5th Cross Rd, North, Appareddipalya, Indiranagar, Bengaluru, Karnataka 560008', 'AWB':'00000000000', 'names':'GrowSimplee', 'product_id':'0', 'EDD':'13-02-2023'}, index=[0])
@@ -156,6 +161,14 @@ def clean_data(filename, use_cache=False, add_hub = True):
 
     for index, address in enumerate(data['address']):
         print(index)
+
+        if(address in set(address_cache['address'])) :
+            latitude = list(address_cache['latitude'].loc[address_cache['address']==address])[0]
+            longitude = list(address_cache['longitude'].loc[address_cache['address']==address])[0]
+            Latitude.append(latitude)
+            Longitude.append(longitude)
+            continue
+
         status, latitude, longitude = get_distmat_geocoding(address)
         if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
             Latitude.append(latitude)
@@ -187,6 +200,14 @@ def clean_data(filename, use_cache=False, add_hub = True):
     new_file.save()
 
     return clean_data
+
+def add_to_cache(filename):
+
+    data = read_xlsx('clean_data_'+filename)[['address','latitude','longitude']]
+    original_data = read_xlsx('address_cache')
+
+    data = pd.concat([original_data,data],ignore_index = True).drop_duplicates()
+    data.to_excel('data/inter_iit_data/address_cache.xlsx', index=False)
 
 def reset():
     global ids, addresses, latitudes, longitudes, demand_ids, time_windows
@@ -352,3 +373,4 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
     instance_file.close()
 
     return instance_file.name
+
