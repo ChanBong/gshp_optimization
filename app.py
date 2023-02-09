@@ -1,10 +1,12 @@
 from flask import Flask
 from flask import jsonify
 from flask import request
+from flask_cors import CORS
 import json
 from models import HGS_Solver, OML_Solver, Dynamic_Solver
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/hgs', methods=['POST'])
 def hgs():
