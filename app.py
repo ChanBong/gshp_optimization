@@ -3,8 +3,16 @@ from flask import jsonify
 from flask import request
 import json
 from models import HGS_Solver, OML_Solver
+import acg
 
 app = Flask(__name__)
+@app.route('/coordinates', methods=['POST'])
+def get_geocoding_api():
+    data = request.get_json()
+    address = data['address']
+    acg.read_cache()
+    return acg.get_geocoding(address)
+
 
 @app.route('/hgs', methods=['POST'])
 def hgs():

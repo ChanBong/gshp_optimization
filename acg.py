@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import json
 import os
-import tools
+import tools, geojson
 
 from datetime import datetime
 from traveltimepy.dto import Location, Coordinates
@@ -12,8 +12,8 @@ from traveltimepy.dto.requests.time_filter import DepartureSearch, ArrivalSearch
 from traveltimepy.transportation import Driving
 from traveltimepy.sdk import TravelTimeSdk
 
-bangalore_latitude = 12.9716
-bangalore_longitude = 77.5946
+bangalore_latitude = 12.9709411	
+bangalore_longitude = 77.6385078
 
 sdk = TravelTimeSdk('457cb73e', '423d700709835c86c392e5134aee4a11')
 
@@ -139,6 +139,38 @@ def clean_address_complete(address):
 
     return address
 
+def get_geocoding_api(address):
+    read_cache()
+    return get_geocoding(address)
+
+def get_geocoding(address):
+    global address_cache
+
+    original_address = address
+    if(address in set(address_cache['address'])):
+        latitude = list(address_cache['latitude'].loc[address_cache['address']==address])[0]
+        longitude = list(address_cache['longitude'].loc[address_cache['address']==address])[0]
+        return latitude, longitude
+
+    status, latitude, longitude = get_distmat_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
+        address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
+        return latitude, longitude
+    
+    address = clean_address(address)
+    status, latitude, longitude = get_distmat_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
+        address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
+        return latitude, longitude
+    
+    address = original_address
+    status, latitude, longitude = get_geokeo_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
+        address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude]
+        return latitude, longitude
+
+    return 0, 0
+
 def clean_data(filename, use_cache=False, add_hub = True):
 
     if use_cache:
@@ -156,38 +188,12 @@ def clean_data(filename, use_cache=False, add_hub = True):
 
     for index, address in enumerate(data['address']):
         print(index)
-        original_address = address
-        if(address in set(address_cache['address'])):
-            latitude = list(address_cache['latitude'].loc[address_cache['address']==address])[0]
-            longitude = list(address_cache['longitude'].loc[address_cache['address']==address])[0]
+        latitude, longitude = get_geocoding(address)
+        if latitude == 0 and longitude == 0:
+            clean_data = clean_data.drop(index=index)
+        else :
             Latitude.append(latitude)
             Longitude.append(longitude)
-            continue
-
-        status, latitude, longitude = get_distmat_geocoding(address)
-        if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
-            Latitude.append(latitude)
-            Longitude.append(longitude)
-            address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
-            continue
-        
-        address = clean_address(address)
-        status, latitude, longitude = get_distmat_geocoding(address)
-        if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
-            Latitude.append(latitude)
-            Longitude.append(longitude)
-            address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
-            continue
-        
-        address = original_address
-        status, latitude, longitude = get_geokeo_geocoding(address)
-        if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
-            Latitude.append(latitude)
-            Longitude.append(longitude)
-            address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude]
-            continue
-        
-        clean_data = clean_data.drop(index=index)
 
     clean_data['latitude'] = Latitude
     clean_data['longitude'] = Longitude
@@ -292,22 +298,21 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, 
 
     reset()
     read_coordinates(clean_data(filename_endpoint, use_cache), endpoints = True)
-    N = len(addresses)
     read_coordinates(clean_data(filename_pickup, use_cache, add_hub = False), pickups = True)
-    M = len(addresses)-N
     
     if use_cache:
         return read_xlsx(edge_weight+'_matrix_pickups_to_endpoint_'+filename_pickup).to_numpy()
 
-    distance_matrix = np.zeros((M,N+M))
-    time_matrix = np.zeros((M,N+M))
+    N = len(addresses)
+    distance_matrix = np.zeros((N,N))
+    time_matrix = np.zeros((N,N))
 
     locations = []
 
-    for ind in range(M+N):
+    for ind in range(N):
         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
 
-    for ind in range(N,M+N):
+    for ind in range(N):
         print(ind)
         departure_search = DepartureSearch(
             id='INTER_IIT',
@@ -321,13 +326,16 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, 
 
         response = sdk.time_filter(locations, [departure_search], [])
         for location in response.results[0].locations:
-            distance_matrix[ind-N,int(location.id)] = location.properties[0].distance
-            time_matrix[ind-N,int(location.id)] = location.properties[0].travel_time
+            distance_matrix[ind,int(location.id)] = location.properties[0].distance
+            time_matrix[ind,int(location.id)] = location.properties[0].travel_time
     
+    distance_matrix = normalize(distance_matrix)
+    time_matrix = normalize(time_matrix)
+
     df = pd.DataFrame(distance_matrix)
-    df.to_excel('data/inter_iit_data/distance_matrix_pickups_to_endpoint_'+filename_pickup+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/distance_matrix_'+filename_pickup+'.xlsx', index=False)
     df = pd.DataFrame(time_matrix)
-    df.to_excel('data/inter_iit_data/time_matrix_pickups_to_endpoint_'+filename_pickup+'.xlsx', index=False)
+    df.to_excel('data/inter_iit_data/time_matrix_'+filename_pickup+'.xlsx', index=False)
 
     if edge_weight == 'distance' :
         return distance_matrix
@@ -438,7 +446,7 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
 def get_endpoints(filename,solution_filename="solution_example"):
 
     cost, routes, no_of_riders = tools.read_solution('solutions/'+solution_filename)
-    endpoints = [0]
+    endpoints = []
     for route in routes:
         endpoints.append(route[-2])
 
@@ -448,14 +456,20 @@ def get_endpoints(filename,solution_filename="solution_example"):
     return filename+'_'+solution_filename
 
 # get_endpoints('bangalore dispatch address')
-# generate_instance(filename = get_endpoints('bangalore dispatch address'), pickup_filename = 'bangalore_pickups', pickups = True,use_cache = True)
+# generate_instance(filename = get_endpoints('bangalore dispatch address'), pickup_filename = 'bangalore_pickups', pickups = True)
+# generate_instance('bangalore_pickups', pickups = True,pickup_filename ='bangalore dispatch address_solution_example')
 
 
-def print_sol(filename,solution_filename="solution_example"):
+def print_geojson(filename,solution_filename="solution_example"):
 
     cost, routes, no_of_riders = tools.read_solution('solutions/'+solution_filename)
+    temp=[]
     for ind,route in enumerate(routes):
-        data = read_xlsx('clean_data_'+filename).iloc[route][['latitude','longitude']]
-        data.to_excel('routes/routelatlong'+str(ind+1)+'.xlsx',index = False)
+        data = read_xlsx('clean_data_'+filename).iloc[route]
+        ls = []
+        for ind,_ in enumerate(data):
+            ls.append((data['longitude'].iloc[ind],data['latitude'].iloc[ind]))
+        temp.append(ls)
+    return geojson.MultiLineString(temp)
 
-# print_sol('bangalore dispatch address')
+# print(get_geocoding_api('bangalore'))
