@@ -388,7 +388,7 @@ def generate_ptop_matrix(filename_pickup, filename_delivery, use_cache=False, ed
     else :
         return time_matrix
 
-def generate_instance(filename, use_cache = False, edge_weight = "time", one_day_time = 45000, pickups = False, pickup_filename = ""):
+def generate_instance(filename, use_cache = False, edge_weight = "time", one_day_time = 18000, pickups = False, pickup_filename = ""):
 
     if pickups == True :
         matrix = generate_pickup_matrix(pickup_filename, filename, use_cache)
