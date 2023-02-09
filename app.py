@@ -2,7 +2,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 import json
-from models import HGS_Solver, OML_Solver
+from models import HGS_Solver, OML_Solver, Dynamic_Solver
 
 app = Flask(__name__)
 
@@ -48,17 +48,21 @@ def dynamic_oml():
     uses the OML solution `solver.py` to solve dynamic VRPTW taking in a list of pickup locations
     """
     data = request.get_json()
-    oml_solver = OML_Solver(data)
-    cost, routes = OML_Solver.solve(oml_solver)
-    cost = str(cost[0])
-    routes = [route.tolist() for route in routes[0]]
-    
-    # sort routes by length in descending order and if length is same then sort by first element sort by first element putting the smaller first element first
-    routes = sorted(routes, key=lambda x: (-len(x), x[0]))
+    dynamic_solver = Dynamic_Solver(data)
+    if (data['method'] == 'local_search'):
+        cost, routes, number_of_riders = Dynamic_Solver.local_search_solve(dynamic_solver)
+    else:
+        # use lazy solveer
+        pass
+
+
+    cost = str(cost)
+    number_of_riders = str(number_of_riders)
 
     return jsonify(
     {
         "cost": cost,
+        "number_of_riders": number_of_riders,
         "routes": routes
     })
 

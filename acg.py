@@ -458,4 +458,4 @@ def print_sol(filename,solution_filename="solution_example"):
         data = read_xlsx('clean_data_'+filename).iloc[route][['latitude','longitude']]
         data.to_excel('routes/routelatlong'+str(ind+1)+'.xlsx',index = False)
 
-# print_sol('bangalore dispatch address')
+# print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')

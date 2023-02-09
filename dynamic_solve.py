@@ -8,7 +8,7 @@ import numpy as np
 import code
 
 from tools import read_solution, read_vrplib, write_solution
-from acg import clean_data, generate_pickup_matrix, generate_distance_matrix
+from acg import clean_data, generate_ptop_matrix
 
 MASTER_LOCATION_FILE, MASTER_DISTANCE_FILE, MASTER_SOLUTION_FILE, PROCESSED_PICKUP_FILE = None, None, None, None
 
@@ -46,14 +46,14 @@ def read_master_instances(delivery_instance, delivery_vrptw_instance, solution_i
     MASTER_DISTANCE_FILE = f"data/inter_iit_data/master_{delivery_instance}.xlsx"
     solution_instance_name = solution_instance.split("/")[-1].split(".")[0]
     MASTER_SOLUTION_FILE = f"data/inter_iit_data/master_solution_{solution_instance_name}.json"
-    MASTER_LOCATION_FILE = f"data/inter_iit_data/cleaned_data_master_{delivery_instance}.xlsx"
+    MASTER_LOCATION_FILE = f"data/inter_iit_data/clean_data_master_{delivery_instance}.xlsx"
 
     instance = read_vrplib(delivery_vrptw_instance)
     bag_capacity = instance["capacity"]
 
     if not file_exists(MASTER_LOCATION_FILE):
         print(f"Creating master location file {MASTER_LOCATION_FILE}")
-        delivery_data = pd.read_excel(f"data/inter_iit_data/cleaned_data_{delivery_instance}.xlsx")
+        delivery_data = pd.read_excel(f"data/inter_iit_data/clean_data_{delivery_instance}.xlsx")
         delivery_data.to_excel(MASTER_LOCATION_FILE)
     else:
         print(f"Reading master location file {MASTER_LOCATION_FILE}")
@@ -115,6 +115,21 @@ def add_matrices(A, B):
     A = pd.concat([A, B], axis=0).reset_index(drop=True)
     return A
 
+def sync_route(routes, name_of_instance):
+    '''
+    this function is used to sync the routes with the database
+    ''' 
+    name_of_instance = (name_of_instance.split("_")[3]).split(".")[0]
+    print(name_of_instance)
+    cleaned_data = pd.read_excel(f"data/inter_iit_data/clean_data_master_{name_of_instance}.xlsx")
+    print(cleaned_data)
+    for route in routes:
+        for i in range(len(route)):
+            route[i] = str(cleaned_data.iloc[int(route[i])].AWB)
+
+    return routes
+
+
 def get_demands(n):
     """
     Get the demands of each location
@@ -133,7 +148,7 @@ def get_route_demands(total_location, solution):
         print(route_demands)
         route_demand = [0]
         for location in route:
-            route_demand.append(route_demand[-1] + demands[location])
+            route_demand.append(route_demand[-1] + demands[int(location)])
         route_demand.pop()
         route_demand = route_demand[::-1]
         route_demands.append(route_demand)
@@ -196,14 +211,16 @@ def run(args):
     if processed_pickup(args.pickup_folder, args.pickup_instance):
         print(f"Pickup instance {args.pickup_instance} has already been processed")
         cost, solution, number_of_riders = read_solution(f"data/inter_iit_data/{args.pickup_folder}/{args.pickup_instance}_solution.txt")
-        return cost, solution
+        return cost, solution, number_of_riders
 
     # code.interact(local=locals())
     pickup_data = clean_data(args.pickup_instance, args.pickup_cache)  
-    pickup_distance_matrix = generate_pickup_matrix(args.pickup_instance, f"master_{args.delivery_instance}", args.pickup_cache)
+    pickup_distance_matrix = generate_ptop_matrix(args.pickup_instance, f"master_{args.delivery_instance}", args.pickup_cache)
     pickup_distance_matrix = pd.DataFrame(pickup_distance_matrix)
 
-    print(pickup_distance_matrix.shape, distance_matrix.shape)
+    # pickup_distance_matrix = pd.read_excel('data/inter_iit_data/time_matrix_pickups_to_delivery_bangalore_pickups.xlsx')
+
+    # print(pickup_distance_matrix.shape, distance_matrix.shape)
 
     distance_matrix = add_matrices(distance_matrix, pickup_distance_matrix)
     
@@ -211,11 +228,11 @@ def run(args):
     # TODO : Remove hardcoding
     # take all delivey and pickup demands as 2
 
-    print(pickup_data, "\n", pickup_distance_matrix, "\n", distance_matrix)
-
+    # print(pickup_data, "\n", pickup_distance_matrix, "\n", distance_matrix)
+    # print("Shape of distance matrix", distance_matrix.shape[0])
     route_demands = get_route_demands(distance_matrix.shape[0], current_solution)
     pickup_demands = get_pickup_demands(pickup_data)
-    print(pickup_demands)
+    # print(pickup_demands)
     unsucessful_pickup_locations = []
 
     # calculate detour for each pickup location for each route and pick the route with minimum detour
@@ -230,11 +247,11 @@ def run(args):
             route_demand = route_demands[route]
 
             for index in range(len(current_solution[route])-1):
-                location1 = current_solution[route][index]
-                location2 = current_solution[route][index+1]
+                location1 = int(current_solution[route][index])
+                location2 = int(current_solution[route][index+1])
                 # code.interact(local=locals())
                 # print(loca)
-                print(index, route_demand)
+                # print(index, route_demand)
                 if (route_demand[index] + pickup_demand) > bag_capacity:
                     continue
 
@@ -248,13 +265,13 @@ def run(args):
             print(f"Error: no route found for pickup location {pickup_location}")
             unsucessful_pickup_locations.append(pickup_location)
             continue
-        print(min_detour, min_index, min_route_index)
-        print(current_solution)
+        # print(min_detour, min_index, min_route_index)
+        # print(current_solution)
         current_solution[min_route_index].insert(min_index+1, pickup_location)
-        print("Before update")
-        print(route_demands, current_solution)
+        # print("Before update")
+        # print(route_demands, current_solution)
         route_demands = update_route_demands(route_demands, min_route_index, min_index, pickup_demand)
-        print(route_demands)
+        # print(route_demands)
         current_cost += min_detour                
 
     print("New solution", current_solution)
@@ -267,10 +284,12 @@ def run(args):
     write_master_distance_matrix(distance_matrix)
     write_master_location(master_data, pickup_data)
 
-    return current_cost, current_solution
+    current_solution = sync_route(current_solution, name_of_instance=args.delivery_vrptw_instance)
+
+    return current_cost, current_solution, number_of_riders
 
 
-def oml_dynamic_solver(instance_dict):
+def oml_local_search(instance_dict):
     '''
     this function is used to solve the problem using the oml endpoint
     convert a dictionary to a args namespace and then call the run function and return the costs and solution
@@ -287,14 +306,17 @@ def oml_dynamic_solver(instance_dict):
 
     print(args)
 
-    costs, solution = run(args)
-    return costs, solution
+    costs, solution, number_of_riders = run(args)
+    return costs, solution, number_of_riders
+
+def lazy_pickup():
+    pass
 
 data = {
-    "pickup_instance": "model_pickup_2",
-    "delivery_instance": "model_delivery",
-    "delivery_vrptw_instance": "instances/instance_model_delivery.txt",
-    "solution_instance": "solutions/instance_model_delivery.json",
+    "pickup_instance": "bangalore_pickups",
+    "delivery_instance": "bangalore dispatch address",
+    "delivery_vrptw_instance": "instances/instance_time_18000_bangalore dispatch address.txt",
+    "solution_instance": "solutions/instance_time_18000_bangalore dispatch address-2023-02-09T16:08:26.367862.json",
     "pickup_folder": "pickup",
     "delivery_cache": True,
     "pickup_cache": True,
@@ -311,6 +333,8 @@ def reset():
         os.remove(MASTER_LOCATION_FILE)
     if os.path.exists(PROCESSED_PICKUP_FILE):
         os.remove(PROCESSED_PICKUP_FILE)
+
+# print(oml_local_search(data))
 
 
 # def main():
