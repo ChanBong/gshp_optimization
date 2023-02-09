@@ -472,4 +472,4 @@ def print_geojson(filename,solution_filename="solution_example"):
         temp.append(ls)
     return geojson.MultiLineString(temp)
 
-# print(get_geocoding_api('bangalore'))
+# print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')

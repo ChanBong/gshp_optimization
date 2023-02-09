@@ -3,6 +3,7 @@ import hygese as hgs
 from collections import OrderedDict
 from tools import write_vrplib, read_vrplib
 from solver import oml_solver
+from dynamic_solve import oml_local_search, lazy_pickup
 import json
 
 class HGS_Solver():
@@ -36,4 +37,14 @@ class OML_Solver():
 
     def solve(self):
         result = self.oml_solver(self.data)
+        return result
+
+class Dynamic_Solver():
+    def __init__(self, data):
+        self.data = data
+        self.dynamic_local_search = oml_local_search
+        self.lazy_pickup = lazy_pickup
+
+    def local_search_solve(self):
+        result = self.dynamic_local_search(self.data)
         return result

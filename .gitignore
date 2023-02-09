@@ -180,3 +180,7 @@ workbench.ipynb
 data_analyse.ipynb
 release/
 results.txt
+data/deliverables
+data/inter_iit_data/master*
+data/inter_iit_data/clean_data_master*
+data/inter_iit_data/pickup

@@ -32,7 +32,6 @@ def parse_args():
 def process_cost_and_routes(costs, routes, name_of_instance):
     costs, routes = clean_costs_and_solution(costs, routes)
     routes = sorted(routes, key=lambda x: (-len(x), x[0]))
-    routes = sync_route(routes, name_of_instance)
     routes = add_depot_to_solution(routes)
     # make every element of routes a string
     for i in range(len(routes)):
@@ -45,14 +44,22 @@ def process_cost_and_routes(costs, routes, name_of_instance):
 def sync_route(routes, name_of_instance):
     '''
     this function is used to sync the routes with the database
-    '''
+    ''' 
     name_of_instance = name_of_instance.split("_")[3]
     cleaned_data = pd.read_excel(f"data/inter_iit_data/clean_data_{name_of_instance}.xlsx")
     for route in routes:
         for i in range(len(route)):
-            route[i] = cleaned_data.iloc[route[i]].AWB
+            route[i] = str(cleaned_data.iloc[int(route[i])].AWB)
 
     return routes
+
+def final_output(routes):
+    '''
+    this function is used to convert the routes into the required format
+    '''
+    # for route in len(range(routes)):
+    #     with open('')
+    pass
 
 def run(args):
     print(type(args))
@@ -83,11 +90,15 @@ def run(args):
         solve_hindsight(env, config.static(), args.solver_seed)
     else:
         costs, routes = solve_dynamic(env, config, args.solver_seed)
-        
+
         costs, routes, number_of_riders = process_cost_and_routes(costs, routes, name_of_instance=name_of_instance)
 
-        # current_time = datetime.now().isoformat()
-        # tools.write_solution(f"solutions/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
+        current_time = datetime.now().isoformat()
+        tools.write_solution(f"solutions/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
+    
+        final_output(routes)
+
+        routes = sync_route(routes, name_of_instance=name_of_instance)
 
         print(f"name_of_instance: {name_of_instance}\n")
         print(f"Costs: {costs}\n")
@@ -103,7 +114,7 @@ def oml_solver(instance_dict):
     '''
     args = argparse.Namespace()
 
-    instance_name = generate_instance(filename=instance_dict['instance_name'], use_cache=instance_dict['use_cache'])
+    instance_name = generate_instance(filename=instance_dict['instance_name'], use_cache=instance_dict['use_cache'], one_day_time=18000)
 
     args.instance = instance_name
     args.instance_seed = instance_dict['instance_seed']
