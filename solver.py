@@ -114,7 +114,7 @@ def oml_solver(instance_dict):
     '''
     args = argparse.Namespace()
 
-    instance_name = generate_instance(filename=instance_dict['instance_name'], use_cache=instance_dict['use_cache'])
+    instance_name = generate_instance(filename=instance_dict['instance_name'], use_cache=instance_dict['use_cache'], one_day_time=18000)
 
     args.instance = instance_name
     args.instance_seed = instance_dict['instance_seed']
