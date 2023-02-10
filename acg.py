@@ -498,7 +498,7 @@ def generate_instance(filename, use_cache = False, edge_weight = "time", one_day
 
 def get_endpoints(filename,solution_filename="solution_example"):
 
-    cost, routes, no_of_riders = tools.read_solution('solutions/'+solution_filename)
+    cost, routes, no_of_riders = tools.read_solution('sols/'+solution_filename)
     endpoints = []
     for route in routes:
         endpoints.append(route[-2])
@@ -515,7 +515,7 @@ def get_endpoints(filename,solution_filename="solution_example"):
 
 def print_geojson(filename,solution_filename="solution_example"):
 
-    cost, routes, no_of_riders = tools.read_solution('solutions/'+solution_filename)
+    cost, routes, no_of_riders = tools.read_solution('sols/'+solution_filename)
     temp=[]
     for ind,route in enumerate(routes):
         data = read_xlsx('clean_data_'+filename).iloc[route]
@@ -528,3 +528,4 @@ def print_geojson(filename,solution_filename="solution_example"):
 # print(print_geojson('bangalore dispatch address'))
 # print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')
 
+get_geocoding("3rd Cross, 2nd Stage, Domlur, Bangalore")
