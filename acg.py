@@ -124,7 +124,7 @@ def get_google_geocoding(address):
     north_east = str(bangalore_latitude+0.2) + ',' + str(bangalore_longitude+0.2)
     bounds = '&bounds='+north_east+'|'+south_west
 
-    url = 'https://maps.googleapis.com/maps/api/geocode/json?address='+address+'&components=country:IN'+postal_code+bounds+'&key=CbizOGM7m4UR1EyBTfMirbJBKcfEB'
+    url = 'https://maps.googleapis.com/maps/api/geocode/json?address='+address+'&components=country:IN'+postal_code+bounds+'&key=AIzaSyCGk5rxeaWYIRE_FRC89ZV5uMonpqmuabU'
     resp = requests.get(url=url)
     data = resp.json()
 
@@ -137,7 +137,7 @@ def get_google_geocoding(address):
     return False, 0., 0.
 
 def get_distmat_geocoding(address):
-    url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=xtT8ArMnjkIXCLqiSDRsNraE6u2ap'
+    url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=CbizOGM7m4UR1EyBTfMirbJBKcfEB'
     resp = requests.get(url=url)
     data = resp.json()
 
