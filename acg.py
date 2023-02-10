@@ -528,4 +528,4 @@ def print_geojson(filename,solution_filename="solution_example"):
 # print(print_geojson('bangalore dispatch address'))
 # print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')
 
-get_geocoding("3rd Cross, 2nd Stage, Domlur, Bangalore")
+# get_geocoding("3rd Cross, 2nd Stage, Domlur, Bangalore")
