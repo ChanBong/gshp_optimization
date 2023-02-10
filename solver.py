@@ -49,7 +49,7 @@ def sync_route(routes, name_of_instance):
     cleaned_data = pd.read_excel(f"data/inter_iit_data/clean_data_{name_of_instance}.xlsx")
     for route in routes:
         for i in range(len(route)):
-            route[i] = str(cleaned_data.iloc[int(route[i])].AWB)
+            route[i] = (str(cleaned_data.iloc[int(route[i])].AWB),str(cleaned_data.iloc[int(route[i])].latitude),str(cleaned_data.iloc[int(route[i])].longitude))
 
     return routes
 

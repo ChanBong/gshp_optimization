@@ -26,23 +26,41 @@ demand_ids = []
 demands = []
 time_windows = []
 
-def fetch_delivery_from_api():
+def fetch_delivery_from_api(filename = 'delivery'):
     url = "https://interiit.msqu4re.me/delivery"
     headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
     response = requests.get(url, headers=headers)
 
-    with open('delivery.json', 'w') as f:
+    with open(filename+'.json', 'w') as f:
         json.dump(response.json(), f)
 
-    with open('delivery.json', 'r') as f:
+    with open(filename+'.json', 'r') as f:
         json_data = json.loads(f.read())
 
     data_from_api = pd.json_normalize(json_data, record_path=['deliveries']) 
     columns = ['id', 'type', 'address', 'AWB', 'names', 'product_id', 'EDD']
     data_from_api.columns = columns   
-    data_from_api.to_excel('data/inter_iit_data/deliveries.xlsx', index=False)
+    data_from_api.to_excel('data/inter_iit_data/' + filename + '.xlsx', index=False)
 
-    os.remove('delivery.json')
+    os.remove(filename+'.json')
+
+def fetch_pickup_from_api(filename = 'pickup'):
+    url = "https://interiit.msqu4re.me/pickup"
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    response = requests.get(url, headers=headers)
+
+    with open(filename+'.json', 'w') as f:
+        json.dump(response.json(), f)
+
+    with open(filename+'.json', 'r') as f:
+        json_data = json.loads(f.read())
+
+    data_from_api = pd.json_normalize(json_data, record_path=['pickups']) 
+    columns = ['id', 'type', 'address', 'AWB', 'names', 'product_id', 'EDD']
+    data_from_api.columns = columns   
+    data_from_api.to_excel('data/inter_iit_data/' + filename + '.xlsx', index=False)
+
+    os.remove(filename+'.json')
 
 def read_xlsx(filename):
     data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
@@ -472,4 +490,6 @@ def print_geojson(filename,solution_filename="solution_example"):
         temp.append(ls)
     return geojson.MultiLineString(temp)
 
+# print(print_geojson('bangalore dispatch address'))
 # print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')
+
