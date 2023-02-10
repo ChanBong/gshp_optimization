@@ -40,9 +40,11 @@ def fetch_delivery_from_api(filename = 'delivery'):
     data_from_api = pd.json_normalize(json_data, record_path=['deliveries']) 
     columns = ['id', 'type', 'address', 'AWB', 'names', 'product_id', 'EDD']
     data_from_api.columns = columns   
-    data_from_api.to_excel('data/inter_iit_data/' + filename + '.xlsx', index=False)
+    deliveries_file = 'data/inter_iit_data/' + filename + '.xlsx'
+    data_from_api.to_excel(deliveries_file, index=False)
 
     os.remove(filename+'.json')
+    return deliveries_file
 
 def fetch_pickup_from_api(filename = 'pickup'):
     url = "https://interiit.msqu4re.me/pickup"
