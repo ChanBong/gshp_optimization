@@ -15,7 +15,7 @@ from traveltimepy.sdk import TravelTimeSdk
 bangalore_latitude = 12.9709411	
 bangalore_longitude = 77.6385078
 
-sdk = TravelTimeSdk('457cb73e', '423d700709835c86c392e5134aee4a11')
+sdk = TravelTimeSdk('d10d2139', '359c4b1233591e3135b1b01df415192a')
 
 address_cache = pd.DataFrame()
 ids=[]
@@ -124,7 +124,7 @@ def get_google_geocoding(address):
     north_east = str(bangalore_latitude+0.2) + ',' + str(bangalore_longitude+0.2)
     bounds = '&bounds='+north_east+'|'+south_west
 
-    url = 'https://maps.googleapis.com/maps/api/geocode/json?address='+address+'&components=country:IN'+postal_code+bounds+'&key=AIzaSyCGk5rxeaWYIRE_FRC89ZV5uMonpqmuabU'
+    url = 'https://maps.googleapis.com/maps/api/geocode/json?address='+address+'&components=country:IN'+postal_code+bounds+'&key=CbizOGM7m4UR1EyBTfMirbJBKcfEB'
     resp = requests.get(url=url)
     data = resp.json()
 
