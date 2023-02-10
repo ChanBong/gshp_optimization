@@ -27,7 +27,7 @@ def test_oml_endpoint():
         "pickup_instance": "bangalore_pickups",
         "delivery_instance": "bangalore dispatch address",
         "delivery_vrptw_instance": "instances/instance_time_18000_bangalore dispatch address.txt",
-        "solution_instance": "solutions/instance_time_18000_bangalore dispatch address-2023-02-09T16:08:26.367862.json",
+        "solution_instance": "sols/instance_time_18000_bangalore dispatch address-2023-02-09T16:08:26.367862.json",
         "pickup_folder": "pickup",
         "delivery_cache": True,
         "pickup_cache": True,

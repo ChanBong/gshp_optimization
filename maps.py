@@ -64,5 +64,5 @@ def plot_solution(latitudes_longitudes, solution, depot_index=0, title="Solution
     plt.title(title)
     plt.legend()
     current_time = datetime.now().strftime("%H:%M:%S")
-    plt.savefig(f"solutions/{title}-{current_time}.png")
+    plt.savefig(f"sols/{title}-{current_time}.png")
     plt.show()

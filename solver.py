@@ -94,7 +94,7 @@ def run(args):
         costs, routes, number_of_riders = process_cost_and_routes(costs, routes, name_of_instance=name_of_instance)
 
         current_time = datetime.now().isoformat()
-        tools.write_solution(f"solutions/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
+        tools.write_solution(f"sols/{name_of_instance}-{current_time}.json", costs, routes, number_of_riders)
     
         final_output(routes)
 
