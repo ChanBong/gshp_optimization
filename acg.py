@@ -97,6 +97,11 @@ def get_avg_speed(filename):
 
     return distance.sum().sum()/time.sum().sum()
 
+def get_on_time_delivery(filename):
+    total = read_xlsx(filename).shape[0]
+    valid = read_xlsx('clean_data_'+filename).shape[0]
+    return valid*100./total
+
 def get_google_geocoding(address):
 
     postal_code = ""
