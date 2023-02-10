@@ -43,13 +43,13 @@ def static_oml():
 
     cost = str(cost)
     number_of_riders = str(number_of_riders)
-
+    on_time_deliveries = str(acg.get_on_time_delivery(data['instance_name']))
     return jsonify(
     {
         "cost": cost,
         "number_of_riders": number_of_riders,
         "routes": routes,
-        "on_time_deliveries": "100.0"
+        "on_time_deliveries": on_time_deliveries
     })
 
 @app.route('/optimise/dynamic', methods=['POST'])
@@ -69,13 +69,14 @@ def dynamic_oml():
 
     cost = str(cost)
     number_of_riders = str(number_of_riders)
+    on_time_deliveries = str(acg.get_on_time_delivery(data['instance_name']))
 
     return jsonify(
     {
         "cost": cost,
         "number_of_riders": number_of_riders,
         "routes": routes, 
-        "on_time_deliveries": "100.0"
+        "on_time_deliveries": on_time_deliveries
     })
 
 

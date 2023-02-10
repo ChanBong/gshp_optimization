@@ -105,6 +105,8 @@ def run(args):
         print(f"Routes: {routes}\n")
         print(f"Number of riders: {number_of_riders}\n")
     
+        
+
         return costs, routes, number_of_riders
 
 def oml_solver(instance_dict):
