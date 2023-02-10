@@ -97,8 +97,41 @@ def get_avg_speed(filename):
 
     return distance.sum().sum()/time.sum().sum()
 
+def get_google_geocoding(address):
+
+    postal_code = ""
+    if (address.lower().find('hsr') != -1):
+        postal_code = "&components=postal_code:560087"
+    elif (address.lower().find('indiranagar') != -1):
+        postal_code = "&components=postal_code:560038"
+    elif (address.lower().find('marathahalli') != -1):
+        postal_code = "&components=postal_code:560037"
+    elif (address.lower().find('kr puram') != -1):
+        postal_code = "&components=postal_code:560036"
+    elif (address.lower().find('jp nagar') != -1):
+        postal_code = "&components=postal_code:560078"
+    elif (address.lower().find('church street') != -1):
+        postal_code = "&components=postal_code:560001"
+    elif (address.lower().find('domlur') != -1):
+        postal_code = "&components=postal_code:560071"
+
+    south_west = str(bangalore_latitude-0.2) + ',' + str(bangalore_longitude-0.2)
+    north_east = str(bangalore_latitude+0.2) + ',' + str(bangalore_longitude+0.2)
+    bounds = '&bounds='+north_east+'|'+south_west
+
+    url = 'https://maps.googleapis.com/maps/api/geocode/json?address='+address+'&components=country:IN'+postal_code+bounds+'&key=AIzaSyCGk5rxeaWYIRE_FRC89ZV5uMonpqmuabU'
+    resp = requests.get(url=url)
+    data = resp.json()
+
+    if 'status' in data:
+        if data['status']=='OK':
+            latitude = data['results'][0]['geometry']['location']['lat']
+            longitude = data['results'][0]['geometry']['location']['lng']
+            return True, latitude, longitude
+    print(data['status'])
+    return False, 0., 0.
+
 def get_distmat_geocoding(address):
-    print("## Address", address)
     url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=xtT8ArMnjkIXCLqiSDRsNraE6u2ap'
     resp = requests.get(url=url)
     data = resp.json()
@@ -107,21 +140,6 @@ def get_distmat_geocoding(address):
         if data['status']=='OK':
             latitude = data['result'][0]['geometry']['location']['lat']
             longitude = data['result'][0]['geometry']['location']['lng']
-            return True, latitude, longitude
-    print(data['status'])
-    return False, 0., 0.
-
-def get_geokeo_geocoding(address):
-  
-    url = 'https://geokeo.com/geocode/v1/search.php?q='+address+'g&country=in&api=f2f301246e829748673b208f2275bd49'
-    resp = requests.get(url=url)
-    data = resp.json()
-
-    if 'status' in data:
-        if data['status']=='ok':
-            clean_address = data['results'][0]['formatted_address']
-            latitude = data['results'][0]['geometry']['location']['lat']
-            longitude = data['results'][0]['geometry']['location']['lng']
             return True, latitude, longitude
     print(data['status'])
     return False, 0., 0.
@@ -175,26 +193,32 @@ def get_geocoding(address):
         latitude = list(address_cache['latitude'].loc[address_cache['address']==address])[0]
         longitude = list(address_cache['longitude'].loc[address_cache['address']==address])[0]
         return latitude, longitude
-
-    status, latitude, longitude = get_distmat_geocoding(address)
-    if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
+    margin = 0.2
+    status, latitude, longitude = get_google_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<margin) and (abs(float(longitude)-bangalore_longitude)<margin) :
         address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
         return latitude, longitude
     
-    address = clean_address(address)
-    status, latitude, longitude = get_distmat_geocoding(address)
-    if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
+    address = clean_address_complete(address)
+    status, latitude, longitude = get_google_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<margin) and (abs(float(longitude)-bangalore_longitude)<margin) :
         address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
         return latitude, longitude
     
     address = original_address
-    status, latitude, longitude = get_geokeo_geocoding(address)
-    if status and (abs(float(latitude)-bangalore_latitude)<1.) and (abs(float(longitude)-bangalore_longitude)<1.) :
+    status, latitude, longitude = get_distmat_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<margin) and (abs(float(longitude)-bangalore_longitude)<margin) :
         address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude]
         return latitude, longitude
+    
+    address = clean_address(address)
+    status, latitude, longitude = get_distmat_geocoding(address)
+    if status and (abs(float(latitude)-bangalore_latitude)<margin) and (abs(float(longitude)-bangalore_longitude)<margin) :
+        address_cache.loc[len(address_cache.index)] = [original_address, latitude, longitude] 
+        return latitude, longitude
 
-    return 0, 0
-
+    return 0., 0.
+    
 def clean_data(filename, use_cache=False, add_hub = True):
 
     print(filename)
