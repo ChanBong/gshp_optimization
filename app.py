@@ -74,7 +74,8 @@ def dynamic_oml():
     {
         "cost": cost,
         "number_of_riders": number_of_riders,
-        "routes": routes
+        "routes": routes, 
+        "on_time_deliveries": "100.0"
     })
 
 

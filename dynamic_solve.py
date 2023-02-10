@@ -8,7 +8,7 @@ import numpy as np
 import code
 
 from tools import read_solution, read_vrplib, write_solution
-from acg import clean_data, generate_ptop_matrix
+from acg import clean_data, generate_ptop_matrix, fetch_pickup_from_api
 
 MASTER_LOCATION_FILE, MASTER_DISTANCE_FILE, MASTER_SOLUTION_FILE, PROCESSED_PICKUP_FILE = None, None, None, None
 
@@ -155,6 +155,17 @@ def get_route_demands(total_location, solution):
     
     return route_demands
 
+def reset():
+    # Delete all the master files and processed pickup files
+    if os.path.exists(MASTER_SOLUTION_FILE):
+        os.remove(MASTER_SOLUTION_FILE)
+    if os.path.exists(MASTER_DISTANCE_FILE):
+        os.remove(MASTER_DISTANCE_FILE)
+    if os.path.exists(MASTER_LOCATION_FILE):
+        os.remove(MASTER_LOCATION_FILE)
+    if os.path.exists(PROCESSED_PICKUP_FILE):
+        os.remove(PROCESSED_PICKUP_FILE)
+
 def get_pickup_demands(pickup_data):
     """
     Get the demands of each pickup location
@@ -213,12 +224,14 @@ def run(args):
         cost, solution, number_of_riders = read_solution(f"data/inter_iit_data/{args.pickup_folder}/{args.pickup_instance}_solution.txt")
         return cost, solution, number_of_riders
 
+    pickup_instance = fetch_pickup_from_api(args.pickup_instance)
+    pickup_instance = (pickup_instance.split('/')[2]).split('.')[0]
     # code.interact(local=locals())
-    pickup_data = clean_data(args.pickup_instance, args.pickup_cache)  
+    pickup_data = clean_data(pickup_instance, args.pickup_cache)  
     pickup_distance_matrix = generate_ptop_matrix(args.pickup_instance, f"master_{args.delivery_instance}", args.pickup_cache)
     pickup_distance_matrix = pd.DataFrame(pickup_distance_matrix)
 
-    # pickup_distance_matrix = pd.read_excel('data/inter_iit_data/time_matrix_pickups_to_delivery_bangalore_pickups.xlsx')
+    pickup_distance_matrix = pd.read_excel('data/inter_iit_data/time_matrix_pickups_to_delivery_bangalore_pickups.xlsx')
 
     # print(pickup_distance_matrix.shape, distance_matrix.shape)
 
@@ -307,6 +320,7 @@ def oml_local_search(instance_dict):
     print(args)
 
     costs, solution, number_of_riders = run(args)
+    reset()
     return costs, solution, number_of_riders
 
 def lazy_pickup():
@@ -320,21 +334,11 @@ data = {
     "pickup_folder": "pickup",
     "delivery_cache": True,
     "pickup_cache": True,
-    "hindsight": False
+    "hindsight": False, 
+    "method": "local_search"
 }
 
-def reset():
-    # Delete all the master files and processed pickup files
-    if os.path.exists(MASTER_SOLUTION_FILE):
-        os.remove(MASTER_SOLUTION_FILE)
-    if os.path.exists(MASTER_DISTANCE_FILE):
-        os.remove(MASTER_DISTANCE_FILE)
-    if os.path.exists(MASTER_LOCATION_FILE):
-        os.remove(MASTER_LOCATION_FILE)
-    if os.path.exists(PROCESSED_PICKUP_FILE):
-        os.remove(PROCESSED_PICKUP_FILE)
-
-# print(oml_local_search(data))
+print(oml_local_search(data))
 
 
 # def main():

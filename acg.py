@@ -58,11 +58,14 @@ def fetch_pickup_from_api(filename = 'pickup'):
         json_data = json.loads(f.read())
 
     data_from_api = pd.json_normalize(json_data, record_path=['pickups']) 
-    columns = ['id', 'type', 'address', 'AWB', 'names', 'product_id', 'EDD']
+    print(data_from_api)
+    columns = ['id', 'address', 'AWB', 'names', 'product_id', 'EDD', 'type', 'completed', 'itemID', 'routeId']
     data_from_api.columns = columns   
-    data_from_api.to_excel('data/inter_iit_data/' + filename + '.xlsx', index=False)
+    pickups_file = 'data/inter_iit_data/' + filename + '.xlsx'
+    data_from_api.to_excel(pickups_file, index=False)
 
     os.remove(filename+'.json')
+    return pickups_file
 
 def read_xlsx(filename):
     data = pd.read_excel('data/inter_iit_data/'+filename+'.xlsx')
