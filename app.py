@@ -40,7 +40,7 @@ def static_oml():
     data = request.get_json()
     oml_solver = OML_Solver(data)
     cost, routes, number_of_riders = OML_Solver.solve(oml_solver)
-
+    cost = cost/100
     cost = str(cost)
     number_of_riders = str(number_of_riders)
     on_time_deliveries = str(acg.get_on_time_delivery(data['instance_name']))
@@ -66,7 +66,7 @@ def dynamic_oml():
         # use lazy solveer
         pass
 
-
+    cost = cost/100
     cost = str(cost)
     number_of_riders = str(number_of_riders)
     on_time_deliveries = str(acg.get_on_time_delivery(data['instance_name']))
