@@ -126,7 +126,7 @@ def sync_route(routes, name_of_instance):
     for route in routes:
         for i in range(len(route)):
             route[i] = (str(cleaned_data.iloc[int(route[i])].AWB),str(cleaned_data.iloc[int(route[i])].latitude),str(cleaned_data.iloc[int(route[i])].longitude))
-            
+
     return routes
 
 
@@ -218,6 +218,7 @@ def run(args):
     master_data, distance_matrix, current_cost, current_solution, number_of_riders, bag_capacity = read_master_instances(args.delivery_instance, args.delivery_vrptw_instance, args.solution_instance)
 
     total_locations = distance_matrix.shape[0]
+    print(total_locations)
 
     if processed_pickup(args.pickup_folder, args.pickup_instance):
         print(f"Pickup instance {args.pickup_instance} has already been processed")
@@ -226,14 +227,18 @@ def run(args):
 
     pickup_instance = fetch_pickup_from_api(args.pickup_instance)
     pickup_instance = (pickup_instance.split('/')[2]).split('.')[0]
-    # code.interact(local=locals())
-    pickup_data = clean_data(pickup_instance, args.pickup_cache)  
-    pickup_distance_matrix = generate_ptop_matrix(args.pickup_instance, f"master_{args.delivery_instance}", args.pickup_cache)
+    print(pickup_instance)
+
+    pickup_data = clean_data(pickup_instance, args.pickup_cache, add_hub=False)  
+    print(pickup_data)
+
+    pickup_distance_matrix = generate_ptop_matrix(args.pickup_instance, f"clean_data_master_{args.delivery_instance}", args.pickup_cache, harsh=False)
     pickup_distance_matrix = pd.DataFrame(pickup_distance_matrix)
 
-    pickup_distance_matrix = pd.read_excel('data/inter_iit_data/time_matrix_pickups_to_delivery_bangalore_pickups.xlsx')
+    print(pickup_distance_matrix.shape)
+    print(pickup_distance_matrix)    
 
-    # print(pickup_distance_matrix.shape, distance_matrix.shape)
+    print(pickup_distance_matrix.shape, distance_matrix.shape)
 
     distance_matrix = add_matrices(distance_matrix, pickup_distance_matrix)
     
@@ -299,6 +304,10 @@ def run(args):
 
     current_solution = sync_route(current_solution, name_of_instance=args.delivery_vrptw_instance)
 
+    print("Current solution", current_solution)
+    print("Current cost", current_cost)
+    print("Number of riders", number_of_riders)
+
     return current_cost, current_solution, number_of_riders
 
 
@@ -333,7 +342,7 @@ data = {
     "solution_instance": "solutions/instance_time_18000_bangalore dispatch address-2023-02-09T16:08:26.367862.json",
     "pickup_folder": "pickup",
     "delivery_cache": True,
-    "pickup_cache": True,
+    "pickup_cache": False,
     "hindsight": False, 
     "method": "local_search"
 }

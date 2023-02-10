@@ -98,6 +98,7 @@ def get_avg_speed(filename):
     return distance.sum().sum()/time.sum().sum()
 
 def get_distmat_geocoding(address):
+    print("## Address", address)
     url = 'https://api.distancematrix.ai/maps/api/geocode/json?region=in&address='+address+'&key=xtT8ArMnjkIXCLqiSDRsNraE6u2ap'
     resp = requests.get(url=url)
     data = resp.json()
@@ -196,16 +197,19 @@ def get_geocoding(address):
 
 def clean_data(filename, use_cache=False, add_hub = True):
 
+    print(filename)
     if use_cache:
         return read_xlsx('clean_data_'+filename)
 
     global address_cache
     read_cache()
     data = read_xlsx(filename)
+    print(data)
     if add_hub :
         hub = pd.DataFrame({'address':'1075-I, 5th Cross Rd, North, Appareddipalya, Indiranagar, Bengaluru, Karnataka 560008', 'AWB':'00000000000', 'names':'GrowSimplee', 'product_id':'0', 'EDD':'13-02-2023'}, index=[0])
         data = pd.concat([hub,data.loc[:]]).reset_index(drop=True)
     clean_data = data
+    print(data)
     Latitude = []
     Longitude = []
 
@@ -365,14 +369,16 @@ def generate_pickup_matrix(filename_pickup, filename_endpoint, use_cache=False, 
     else :
         return time_matrix
 
-def generate_ptop_matrix(filename_pickup, filename_delivery, use_cache=False, edge_weight = 'time'):
+def generate_ptop_matrix(filename_pickup, filename_delivery, use_cache=False, edge_weight = 'time', harsh = True):
 
     reset()
-    read_coordinates(clean_data(filename_delivery, use_cache), endpoints = True)
+    read_coordinates(clean_data(filename_delivery, use_cache, add_hub= harsh), endpoints = True)
     N = len(addresses)
     read_coordinates(clean_data(filename_pickup, use_cache, add_hub = False), pickups = True)
     M = len(addresses)-N
     
+    print(N, M)
+
     if use_cache:
         return read_xlsx(edge_weight+'_matrix_pickups_to_delivery_'+filename_pickup).to_numpy()
 
@@ -384,7 +390,7 @@ def generate_ptop_matrix(filename_pickup, filename_delivery, use_cache=False, ed
     for ind in range(M+N):
         locations.append(Location(id=str(ind),coords=Coordinates(lat=latitudes[ind], lng=longitudes[ind])))
 
-    for ind in range(M+N):
+    for ind in range(N,M+N):
         print(ind)
         departure_search = DepartureSearch(
             id='INTER_IIT',
