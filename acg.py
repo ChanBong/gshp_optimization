@@ -79,7 +79,7 @@ def read_num_vehicles():
     return int(len(addresses)/20) # chosen arbitrarily
 
 def read_vehicle_capacity():
-    return 30
+    return 25
 
 def read_depot_index():
     return 0 
@@ -532,5 +532,5 @@ def print_geojson(filename,solution_filename="solution_example"):
 
 # print(print_geojson('bangalore dispatch address'))
 # print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')
-
+# print(print_geojson('bangalore dispatch address','instance_time_18000_bangalore dispatch address-11-04-49-37.json')['coordinates'][0])
 # get_geocoding("3rd Cross, 2nd Stage, Domlur, Bangalore")
