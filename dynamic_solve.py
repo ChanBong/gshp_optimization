@@ -163,8 +163,8 @@ def reset():
         os.remove(MASTER_DISTANCE_FILE)
     if os.path.exists(MASTER_LOCATION_FILE):
         os.remove(MASTER_LOCATION_FILE)
-    if os.path.exists(PROCESSED_PICKUP_FILE):
-        os.remove(PROCESSED_PICKUP_FILE)
+    # if os.path.exists(PROCESSED_PICKUP_FILE):
+        # os.remove(PROCESSED_PICKUP_FILE)
 
 def get_pickup_demands(pickup_data):
     """
@@ -296,7 +296,7 @@ def run(args):
     print("New cost", current_cost)
 
     # update all the master files
-    write_processed_pickup(args.pickup_instance)
+    # write_processed_pickup(args.pickup_instance)
     write_solution(MASTER_SOLUTION_FILE, int(current_cost), current_solution, number_of_riders)
     write_solution(f"data/inter_iit_data/{args.pickup_folder}/{args.pickup_instance}_solution.txt", int(current_cost), current_solution, number_of_riders)
     write_master_distance_matrix(distance_matrix)
