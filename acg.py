@@ -105,20 +105,20 @@ def get_on_time_delivery(filename):
 def get_google_geocoding(address):
 
     postal_code = ""
-    if (address.lower().find('hsr') != -1):
-        postal_code = "&components=postal_code:560087"
-    elif (address.lower().find('indiranagar') != -1):
-        postal_code = "&components=postal_code:560038"
-    elif (address.lower().find('marathahalli') != -1):
-        postal_code = "&components=postal_code:560037"
-    elif (address.lower().find('kr puram') != -1):
-        postal_code = "&components=postal_code:560036"
-    elif (address.lower().find('jp nagar') != -1):
-        postal_code = "&components=postal_code:560078"
-    elif (address.lower().find('church street') != -1):
-        postal_code = "&components=postal_code:560001"
-    elif (address.lower().find('domlur') != -1):
-        postal_code = "&components=postal_code:560071"
+    # if (address.lower().find('hsr') != -1):
+    #     postal_code = "&components=postal_code:560087"
+    # elif (address.lower().find('indiranagar') != -1):
+    #     postal_code = "&components=postal_code:560038"
+    # elif (address.lower().find('marathahalli') != -1):
+    #     postal_code = "&components=postal_code:560037"
+    # elif (address.lower().find('kr puram') != -1):
+    #     postal_code = "&components=postal_code:560036"
+    # elif (address.lower().find('jp nagar') != -1):
+    #     postal_code = "&components=postal_code:560078"
+    # elif (address.lower().find('church street') != -1):
+    #     postal_code = "&components=postal_code:560001"
+    # elif (address.lower().find('domlur') != -1):
+    #     postal_code = "&components=postal_code:560071"
 
     south_west = str(bangalore_latitude-0.2) + ',' + str(bangalore_longitude-0.2)
     north_east = str(bangalore_latitude+0.2) + ',' + str(bangalore_longitude+0.2)
@@ -238,7 +238,7 @@ def clean_data(filename, use_cache=False, add_hub = True):
         hub = pd.DataFrame({'address':'1075-I, 5th Cross Rd, North, Appareddipalya, Indiranagar, Bengaluru, Karnataka 560008', 'AWB':'00000000000', 'names':'GrowSimplee', 'product_id':'0', 'EDD':'13-02-2023'}, index=[0])
         data = pd.concat([hub,data.loc[:]]).reset_index(drop=True)
     clean_data = data
-    print(data)
+    flagged_data = pd.DataFrame()
     Latitude = []
     Longitude = []
 
@@ -246,6 +246,7 @@ def clean_data(filename, use_cache=False, add_hub = True):
         print(index)
         latitude, longitude = get_geocoding(address)
         if latitude == 0 and longitude == 0:
+            flagged_data = flagged_data.append(data.iloc[index])
             clean_data = clean_data.drop(index=index)
         else :
             Latitude.append(latitude)
@@ -257,6 +258,7 @@ def clean_data(filename, use_cache=False, add_hub = True):
     address_cache.to_excel('data/inter_iit_data/address_cache.xlsx', index=False)
     new_file = pd.ExcelWriter('data/inter_iit_data/clean_data_'+filename+'.xlsx')
     clean_data.to_excel(new_file)
+    flagged_data.to_excel('data/inter_iit_data/flagged_data.xlsx', index = False)
     new_file.save()
 
     return clean_data
@@ -518,19 +520,21 @@ def get_endpoints(filename,solution_filename="solution_example"):
 # generate_instance('bangalore_pickups', pickups = True,pickup_filename ='bangalore dispatch address_solution_example')
 
 
-def print_geojson(filename,solution_filename="solution_example"):
+def print_geojson(filename,solution_filename="instance_time_18000_bangalore dispatch address-11-05-50-05"):
 
     cost, routes, no_of_riders = tools.read_solution('sols/'+solution_filename)
     temp=[]
-    for ind,route in enumerate(routes):
+    for route in routes[5:6]:
+        print(route)
         data = read_xlsx('clean_data_'+filename).iloc[route]
         ls = []
-        for ind,_ in enumerate(data):
+        for ind in range(data.shape[0]):
             ls.append((data['longitude'].iloc[ind],data['latitude'].iloc[ind]))
         temp.append(ls)
     return geojson.MultiLineString(temp)
 
 # print(print_geojson('bangalore dispatch address'))
-# print_sol('bangalore dispatch address', solution_filename='instance_time_18000_bangalore dispatch address-2023-02-08T23:33:59.919980.json')
+# print(print_geojson('bangalore dispatch address'))
 # print(print_geojson('bangalore dispatch address','instance_time_18000_bangalore dispatch address-11-04-49-37.json')['coordinates'][0])
 # get_geocoding("3rd Cross, 2nd Stage, Domlur, Bangalore")
+# generate_instance('bangalore dispatch address')
