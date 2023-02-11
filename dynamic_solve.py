@@ -220,10 +220,10 @@ def run(args):
     total_locations = distance_matrix.shape[0]
     print(total_locations)
 
-    if processed_pickup(args.pickup_folder, args.pickup_instance):
-        print(f"Pickup instance {args.pickup_instance} has already been processed")
-        cost, solution, number_of_riders = read_solution(f"data/inter_iit_data/{args.pickup_folder}/{args.pickup_instance}_solution.txt")
-        return cost, solution, number_of_riders
+    # if processed_pickup(args.pickup_folder, args.pickup_instance):
+    #     print(f"Pickup instance {args.pickup_instance} has already been processed")
+    #     cost, solution, number_of_riders = read_solution(f"data/inter_iit_data/{args.pickup_folder}/{args.pickup_instance}_solution.txt")
+    #     return cost, solution, number_of_riders
 
     pickup_instance = fetch_pickup_from_api(args.pickup_instance)
     pickup_instance = (pickup_instance.split('/')[2]).split('.')[0]
